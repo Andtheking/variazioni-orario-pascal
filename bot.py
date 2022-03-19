@@ -3,7 +3,6 @@ TOKEN = '5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4'
 import logging
 from telegram.ext import Updater, CommandHandler
 from sito import *
-from flask import Flask
 import os
 
 PORT = int(os.environ.get('PORT',5000))
@@ -13,7 +12,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-server = Flask(__name__)
+
 
 def help(update, context):
     update.message.reply_text("Ecco l'help")
