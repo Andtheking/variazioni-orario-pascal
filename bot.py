@@ -1,15 +1,21 @@
 TOKEN = '5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4'
 
+from crypt import methods
 import logging
 from telegram import Update
 from telegram.ext import Updater, CommandHandler
 from sito import *
+from flask import Flask
+import os
+
+PORT = int(os.environ.get('PORT',5000))
+
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-
+server = Flask(__name__)
 
 def help(update, context):
     update.message.reply_text("Ecco l'help")
@@ -36,10 +42,11 @@ def main():
 
      dp.add_error_handler(error)
 
-     updater.start_polling()
+     updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN)
+     updater.bot.setWebhook('https://stormy-bayou-12485.herokuapp.com/' + TOKEN)
      updater.idle()
      
-
+    
 
 if __name__ == '__main__':
     main()
