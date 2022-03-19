@@ -1,0 +1,131 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+<TITLE>AGAV - Sostituzioni Docenti</TITLE>
+<link href="css/table.css" rel="stylesheet" type="text/css">
+<link href="css/template.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="js/jquery-3.3.1.js"></script>
+<script type="text/javascript" src="js/mylib.js"></script>
+
+<script type="text/javascript">
+//setTimeout(aggiorna(),10000);
+window.setInterval(function()
+{
+  //window.location.href=window.location.href;
+  if(!$("div#pannelloFirma").is(':visible'))
+	{
+		$.get("disconnect.php",{},function(data){});
+		window.location.reload();
+	}
+},10000);
+</script>
+  
+</HEAD>
+<BODY>
+
+<!--INTESTAZIONE LOGO+NOMESCUOLA+DATA-->
+<div class="headLogo">
+	<table width="100%">
+		<tr>
+			<td align="center" valign="middle" width="7%"><div id="logo"><img src="img/logo.png"></div></td>
+			<td align="left" valign="bottom" width="23%"><div class="testoLogo"><h3>Sostituzioni Docenti</h3></div></td>
+			<td align="center" valign="bottom" width="45%"><div class="testoData"><h3>ISS "Pascal Comandini" - Cesena</h3></div></td>
+			<td align="right" valign="bottom"><div class="testoData"><h3><span id="oggi">0</span></h3></div></td>
+		</tr>
+	</table>
+</div>
+<!--FINE INTESTAZIONE-->
+
+<!--RIQUADRI ASSENZE+PERMESSI+RECUPERI-->
+
+
+<div class="headAssenze">
+	<table width="100%">
+		<tr>
+			<td align="left" valign="top" width="50%">
+				<fieldset class="pannello">
+					<legend><h3><font color="navy">Assenze e permessi Orari</font></h3></legend>
+					<div class="divFissi"><font size='+0'>Tagarelli Giacomo-73<br>Gasperoni Paola-36<br>Turco Adolfo-82<br>Tonini Tiziano-80<br><br><b>Permessi orari:</b><br></font></div>
+				</fieldset>
+				
+			</td>
+			
+			<td align="left" valign="top" width="50%">
+			<fieldset class="pannello">
+					<legend><h3><font color="navy">Recuperi orari</font></h3></legend>
+				<div class="divFissi">
+								</div>
+			</fieldset>
+		</td>
+		
+			
+		</tr>
+	</table>
+</div>
+
+
+<div id="pannelloFirma" hidden="true" class="wrapper">
+
+</div>
+<br>
+
+<!-- AREA GESTIONE PULSANTI SPOSTAMENTO GIORNI -->
+  
+  
+ <!-- FINE PULSANTI GIORNI -->
+<br>
+
+<form name="dati" action="firma.php" method="POST">
+
+<table class="cinereousTable">
+<thead>
+<tr>
+<th width="6%">Ora</th>
+<th>Classe</th>
+<th>Doc.Assente</th>
+<th>Sost.1</th>
+<th>Sost.2</th>
+<th width="4%">Pagam.</th>
+<th>Note</th>
+<th width="6%">Firma</th>
+</tr>
+</thead>
+<tbody>
+
+<tr><td bgcolor='#FAFE72'><b>1</b></td><td><b>2F</b><br>(P12)<br></td><td>Gasperoni Paola</td><td>-</td><td>-</td><td>NO</td><td>La classe entra alla 2^ ora</td><td><img src='img/ok32.png' style='width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;' title='Sostituzione già firmata'></td></tr><tr><td bgcolor='#FAFE72'><b>1</b></td><td><b>5D</b><br>(C13)<br></td><td>Turco Adolfo</td><td>-</td><td>-</td><td>NO</td><td>La classe entra alla 2^ ora</td><td><img src='img/ok32.png' style='width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;' title='Sostituzione già firmata'></td></tr><tr><td bgcolor='#ECAFEB'><b>3</b></td><td><b>1E</b><br>(AULAMAGNA)<br></td><td>Gasperoni Paola</td><td>Guadagno Grazia</td><td>-</td><td>NO</td><td>Potenziamento</td> 	<td>
+ 		<input type='button' class='buttonFirma' name='
+ 		4179 		' value='' style="background-image: url('img/firma32.png'); width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;" title="Firma la sostituzione">
+ 		<!--<button class='buttonFirma' name='
+ 		4179 		' value='firma'><img src="img/firma32.png" title="Firma la sostituzione"></button>-->
+ 	</td>
+ </tr><tr><td bgcolor='#ECAFEB'><b>3</b></td><td><b>4D</b><br>(L11)<br></td><td>Tonini Tiziano</td><td>Comelli Piero</td><td>-</td><td>NO</td><td>Compresente</td> 	<td>
+ 		<input type='button' class='buttonFirma' name='
+ 		4188 		' value='' style="background-image: url('img/firma32.png'); width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;" title="Firma la sostituzione">
+ 		<!--<button class='buttonFirma' name='
+ 		4188 		' value='firma'><img src="img/firma32.png" title="Firma la sostituzione"></button>-->
+ 	</td>
+ </tr><tr><td bgcolor='#ECAFEB'><b>3</b></td><td><b>3A</b><br>(C7)<br></td><td>Turco Adolfo</td><td>Dall'Ara Jacopo</td><td>-</td><td>NO</td><td>sdoppiata compresenza del docente sostituto</td> 	<td>
+ 		<input type='button' class='buttonFirma' name='
+ 		4190 		' value='' style="background-image: url('img/firma32.png'); width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;" title="Firma la sostituzione">
+ 		<!--<button class='buttonFirma' name='
+ 		4190 		' value='firma'><img src="img/firma32.png" title="Firma la sostituzione"></button>-->
+ 	</td>
+ </tr><tr><td bgcolor='#88FAA3'><b>4</b></td><td><b>4F</b><br>(82)<br></td><td>Gasperoni Paola</td><td>-</td><td>-</td><td>NO</td><td>La classe esce al termine della 3^ ora</td><td><img src='img/ok32.png' style='width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;' title='Sostituzione già firmata'></td></tr><tr><td bgcolor='#88FAA3'><b>4</b></td><td><b>4D</b><br>(L11)<br></td><td>Tonini Tiziano</td><td>Comelli Piero</td><td>-</td><td>NO</td><td>Compresente</td> 	<td>
+ 		<input type='button' class='buttonFirma' name='
+ 		4189 		' value='' style="background-image: url('img/firma32.png'); width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;" title="Firma la sostituzione">
+ 		<!--<button class='buttonFirma' name='
+ 		4189 		' value='firma'><img src="img/firma32.png" title="Firma la sostituzione"></button>-->
+ 	</td>
+ </tr><tr><td bgcolor='#FAFE72'><b>5</b></td><td><b>4F</b><br>(82)<br></td><td>Gasperoni Paola</td><td>-</td><td>-</td><td>NO</td><td>La classe esce al termine della 3^ ora</td><td><img src='img/ok32.png' style='width: 45px; height: 45px; background-repeat: no-repeat; background-position: center center;' title='Sostituzione già firmata'></td></tr></tbody>
+</table>
+
+</form>
+
+</body>
+
+<script>
+
+</script>
+
+</html>
