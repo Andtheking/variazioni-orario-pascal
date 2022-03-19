@@ -5,7 +5,7 @@ from telegram.ext import Updater, CommandHandler
 from sito import *
 import os
 
-PORT = int(os.environ.get('PORT',8443))
+PORT = int(os.environ.get('PORT','8443'))
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
