@@ -1,8 +1,6 @@
 TOKEN = '5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4'
 
-from crypt import methods
 import logging
-from telegram import Update
 from telegram.ext import Updater, CommandHandler
 from sito import *
 from flask import Flask
