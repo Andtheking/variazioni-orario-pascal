@@ -18,7 +18,7 @@ def help(update, context):
     update.message.reply_text("Ecco l'help")
 
 def start(update,context):
-    update.message.reply_text("Hai premuto start")
+    update.message.reply_text("Primissima versione del bot (fa cagare per ora): scrivi /impostaClasse <CLASSE_MAIUSCOLA>")
 
 def impostaClasse(update, context):
     print(update.message.from_user.name,": ",end="")
