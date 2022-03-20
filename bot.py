@@ -33,7 +33,7 @@ def start(update,context):
 
 def impostaClasse(update, context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Mandami la classe nel formato: \"1A\"")
+    update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
     return CLASSE
 
 
