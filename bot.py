@@ -64,7 +64,7 @@ def main():
     conversation_handler = ConversationHandler(
         entry_points=[CommandHandler("impostaClasse", impostaClasse)],
         states={
-            CLASSE: [MessageHandler(Filters.text && ~Filters.command, ClasseImpostata)],
+            CLASSE: [MessageHandler(Filters.text & ~ Filters.command, ClasseImpostata)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
