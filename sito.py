@@ -49,7 +49,7 @@ def Main(classeToFind):
         ore = [None, None, None, None]
         note = [None, None, None, None]
         classe = [None, None, None, None]
-
+        stringa = 'Qualcosa non va'
         k = 0
         
         for i in range(len(df['Classe'])):
