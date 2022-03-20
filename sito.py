@@ -1,12 +1,15 @@
 from logging import exception
 import string
 import requests, pandas as pd
-import os
+import os, datetime
+
+
 
 def Main(classeToFind):
     # Fill in your details here to be posted to the login form.
     classeToFind = classeToFind.replace('/impostaClasse', '')
     classeToFind = classeToFind.strip()
+    stringa = 'Qualcosa non va'
     
     if len(classeToFind) != 2:
         return "Non hai inserito una classe"
@@ -31,10 +34,14 @@ def Main(classeToFind):
 
         r = s.get('http://www.sostituzionidocenti.com/fe/sostituzioni.php?offset=0')
         
-        f = open('html.html', 'w')
-        f.write(r.text)
-        f.close()
-
+        oggi = datetime.date.today().strftime('%A')
+        if oggi != "Sunday":
+            f = open('html.html', 'w')
+            f.write(r.text)
+            f.close()
+        else:
+            stringa = 'Oggi è Domenica. Ti mando le variazioni di ieri.)
+ 
         tabella=pd.read_html('html.html', match='Classe')
         df = tabella[0]
         df.head()
@@ -42,14 +49,11 @@ def Main(classeToFind):
         docente = []
         k = 0
         
-
-        # Da fare: Se una docente è assente per più ore --> Non stampa due volte tutto ma separa le ore con una virgola
-        # Da fare: Output con il bot di telegram in bot.py
         docente = [None, None, None, None]
         ore = [None, None, None, None]
         note = [None, None, None, None]
         classe = [None, None, None, None]
-        stringa = 'Qualcosa non va'
+        
         k = 0
         
         for i in range(len(df['Classe'])):
@@ -71,5 +75,5 @@ def Main(classeToFind):
                 else:
                     stringa = f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}" 
 
-    print (stringa)
+    
     return stringa
