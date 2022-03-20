@@ -22,7 +22,7 @@ def start(update,context):
     update.message.reply_text("Primissima versione del bot (fa cagare per ora): scrivi /impostaClasse <CLASSE_MAIUSCOLA>")
 
 def impostaClasse(update, context):
-    logger.info(f"Comando {{update.message.from_user['name']}, ID: {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text(Main(update.message.text))
     
 
