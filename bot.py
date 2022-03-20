@@ -22,7 +22,7 @@ def start(update,context):
     update.message.reply_text("Primissima versione del bot (fa cagare per ora): scrivi /impostaClasse <CLASSE_MAIUSCOLA>")
 
 def impostaClasse(update, context):
-    print(update.message.from_user['name'],update.message.from_user['id'],": ",end="")
+    logger.info(f'Comando "impostaClasse" eseguito da: {update.message.from_user['name']}, ID: {update.message.from_user['id']}')
     update.message.reply_text(Main(update.message.text))
     
 
