@@ -48,7 +48,9 @@ def ClasseImpostata(update, context):
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
+
 def cancel(update, context):
+    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
     
