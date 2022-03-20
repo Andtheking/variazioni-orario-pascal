@@ -40,7 +40,7 @@ def Main(classeToFind):
             f.write(r.text)
             f.close()
         else:
-            stringa = 'Oggi è Domenica. Ti mando le variazioni di ieri.)
+            stringa = 'Oggi è Domenica. Ti mando le variazioni di ieri.'
  
         tabella=pd.read_html('html.html', match='Classe')
         df = tabella[0]
