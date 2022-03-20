@@ -4,6 +4,7 @@ import logging
 from telegram.ext import Updater, CommandHandler
 from sito import *
 import os
+import requests
 
 PORT = int(os.environ.get('PORT','8443'))
 
@@ -32,6 +33,7 @@ def error(update, context):
 def main():
      updater = Updater(TOKEN, use_context=True)
      dp = updater.dispatcher
+     requests.post('https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id=245996916&text=Bot%20online!')
      dp.add_handler(CommandHandler("start", start))
      dp.add_handler(CommandHandler("help", help))
      dp.add_handler(CommandHandler("impostaClasse", impostaClasse))
