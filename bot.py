@@ -139,12 +139,12 @@ def mandaMessaggio():
     file = open('utenti.txt', 'r+')
     testoFile = file.read()
     righe = testoFile.split('\n')
-    i = 0
+    
     
     for riga in righe:    
         dato = riga.split(',')
         id = dato[0]
-        requests.post(f'https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id={id}&text=Funziona, ora devo fare la parte importante ma fin quando la farò sto messaggio arriverà ogni giorno alle 7.40')
+        requests.post(f'https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id=245996916&text={Main(dato[1])}')
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -168,7 +168,7 @@ def main():
     
     dp.add_error_handler(error)
     
-    schedule.every().monday.at("07:40").do(mandaMessaggio)
+    schedule.every().monday.at("03:02").do(mandaMessaggio)
     schedule.every().tuesday.at("07:40").do(mandaMessaggio)
     schedule.every().wednesday.at("07:40").do(mandaMessaggio)
     schedule.every().thursday.at("07:40").do(mandaMessaggio)
