@@ -14,17 +14,26 @@ from sito import *
 from threading import Thread
 from time import sleep
 from urllib.parse import urlparse
+import mysql.connector
 
 import os, requests, logging, schedule, redis
 
 
+mydb = mysql.connector.connect(
+  host="sql4.freemysqlhosting.net",
+  user="sql4480554",
+  password="RSvsJVaa5q",
+  database="sql4480554"
+)
+
+
+mycursor = mydb.cursor(buffered=True)
+
+
 PORT = int(os.environ.get('PORT','8443'))
 
-url = urlparse(os.environ.get("REDIS_URL"))
-red = redis.Redis(host=url.hostname, port=url.port, username=url.username, password=url.password, ssl=True, ssl_cert_reqs=None)
-
 CLASSE = 0
-ID_AND = "245996916"
+ID_TELEGRAM_AND = "245996916"
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -38,11 +47,11 @@ def schedule_checker():
 
 def help(update, context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Imposta una classe con /impostaClasse: clicca il comando (o scrivilo) e poi manda la classe tipo 3A, 2F, 5I. Con /classe puoi vedere la classe impostata al momento.")
+    update.message.reply_text("Imposta una classe con /impostaClasse: clicca il comando (o scrivilo) e poi manda la classe tipo 3A, 2F, 5I. Con /classe puoi vedere la classe impostata al momento. Ogni mattina alle 7.40 ti arriverà una notifica con le variazioni orario del giorno.")
 
 def start(update,context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Seconda versione del bot (fa ancora un po\' cagare): clicca /impostaClasse")
+    update.message.reply_text("Versione praticamente quasi finita. Fai /help.")
 
 def impostaClasse(update, context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -58,79 +67,91 @@ def ClasseImpostata(update, context):
         update.message.reply_text("Non hai inserito una classe")
         return
     try:
-        if int(messaggio[0:1]) < 0 and int(messaggio[0:1]) > 5:
+        if int(messaggio[0:1]) < 0 or int(messaggio[0:1]) > 5:
             update.message.reply_text("Non hai inserito una classe")
             return
     except Exception as ex:
         logging.warning(ex)
         update.message.reply_text("Non hai inserito una classe")
         return
+    
+    mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
+    idInTabella = mycursor.fetchall()
 
-
-    file = open('utenti.txt', 'r+')
-    testoFile = file.read()
-    righe = testoFile.split('\n')
-    i = 0
-    for riga in righe:    
-        dato = riga.split(',')
-        i += 1
-
-        
-        if str(id) in dato[0]:
-            esiste = True
-            righe[i-1] = f"{dato[0]},{str(messaggio)}"
-            break
-            
-        else:
-            logger.info('Utente non trovato')
-            esiste = False
-           
-    if esiste == False:
-        file.write(f"\n{str(id)},{str(messaggio)}".upper())
-        file.close()
+    if len(idInTabella) == 0:
+        mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{update.message.from_user.name}\",\"{messaggio}\");')
         logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
-        update.message.reply_text("Classe impostata.")
+        update.message.reply_text(f"Hai impostato \"{update.message.text}\" come classe. Riceverai una notifica alle 7.40 ogni mattina con le variazioni orario. Per disiscriverti blocca il bot. (Farò un comando prima o poi)")
     else:
-        
-        file.truncate(0)
-        file.close()
-        
-        i = 0
-        file = open('utenti.txt', 'w')
-        for riga in righe:
-            i += 1
-            if i == len(righe):
-                file.write(f"{str(riga)}")
-            else:
-                file.write(f"{str(riga)}\n")
-        file.close()
-        
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {dato[1]} a {str(messaggio)}. Data e ora: {update.message.date}")
-        update.message.reply_text(f"Avevi già una classe impostata ({dato[1]}), l'ho cambiata in {str(messaggio)}.")
+        mycursor.execute(f'UPDATE utenti SET classe=\"{messaggio}\" WHERE id=\"{id}\";')
+        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {update.message.date}")
+        update.message.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
+
+
+    '''# Robo che potrebbe servirmi se database va male
+    
+
+
+    # file = open('utenti.txt', 'r+')
+    # testoFile = file.read()
+    # righe = testoFile.split('\n')
+    # i = 0
+    # for riga in righe:    
+    #     dato = riga.split(',')
+    #     i += 1
+    # 
+    #     
+    #     if str(id) in dato[0]:
+    #         esiste = True
+    #         righe[i-1] = f"{dato[0]},{str(messaggio)}"
+    #         break
+    #         
+    #     else:
+    #         logger.info('Utente non trovato')
+    #         esiste = False
+    #        
+    # if esiste == False:
+    #     file.write(f"\n{str(id)},{str(messaggio)}".upper())
+    #     file.close()
+    #     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
+    #     update.message.reply_text("Classe impostata.")
+    # else:
+    #     
+    #     file.truncate(0)
+    #     file.close()
+    #     
+    #     i = 0
+    #     file = open('utenti.txt', 'w')
+    #     for riga in righe:
+    #         i += 1
+    #         if i == len(righe):
+    #             file.write(f"{str(riga)}")
+    #         else:
+    #             file.write(f"{str(riga)}\n")
+    #     file.close()
+    '''
+    
+    mydb.commit()
+    
+    
 
     return ConversationHandler.END
 
 def classe(update, context):
     id = update.message.from_user.id
-    
-    file = open('utenti.txt', 'r+')
-    testoFile = file.read()
-    righe = testoFile.split('\n')\
-    
-    for riga in righe:    
-        dato = riga.split(',')
+    messaggio = update.message.text
 
-        if str(id) in dato[0]:
-            logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la sua classe alle {update.message.date}")
-            update.message.reply_text(f"Classe attuale: {dato[1]}")
-            classe = True
-            break
-        else:
-            classe = False
-    
-    if classe == False:
+    mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
+    idInTabella = mycursor.fetchall()
+
+    if len(idInTabella) == 0:
         logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. Data e ora: {update.message.date}")
         update.message.reply_text(f"Non hai una classe impostata. Impostala con /impostaClasse")
+
+    else:
+        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la sua classe alle {update.message.date}")
+        update.message.reply_text(f"Classe attuale: {idInTabella[0][2]}")
+
 
 def error(update, context):
     """Log Errors caused by Updates."""
@@ -142,22 +163,20 @@ def cancel(update, context):
     return ConversationHandler.END
 
 def mandaMessaggio():
-    file = open('utenti.txt', 'r+')
-    testoFile = file.read()
-    righe = testoFile.split('\n')
+    mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
+    idInTabella = mycursor.fetchall()
     
-    for riga in righe:    
-        dato = riga.split(',')
-        id = dato[0]
-        requests.post(f'https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id={id}&text={Main(dato[1])}.%20%20%20%20Al%20momento%20la%20classe%20non%20viene%20salvata.%20Rimedierò%20prima%20o%20poi.')
+    if len(idInTabella) != 0:    
+        for utente in idInTabella:
+            id = utente[0]
+            requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
     
-    file.close()
 
 def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
-    requests.post('https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id=245996916&text=Bot%20online!')
+    requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id=245996916&text=Bot%20online!')
      
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
@@ -176,13 +195,15 @@ def main():
     
     dp.add_error_handler(error)
     
-    schedule.every().monday.at("04:06").do(mandaMessaggio)
+    schedule.every().monday.at("07:40").do(mandaMessaggio)
     schedule.every().tuesday.at("07:40").do(mandaMessaggio)
     schedule.every().wednesday.at("07:40").do(mandaMessaggio)
     schedule.every().thursday.at("07:40").do(mandaMessaggio)
     schedule.every().friday.at("07:40").do(mandaMessaggio)
     schedule.every().saturday.at("07:40").do(mandaMessaggio)
+    
 
+    
 
     Thread(target=schedule_checker).start()
 

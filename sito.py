@@ -47,31 +47,38 @@ def Main(classeToFind):
         docente = []
         k = 0
         
-        docente = [None, None, None, None]
-        ore = [None, None, None, None]
-        note = [None, None, None, None]
-        classe = [None, None, None, None]
+        docente = []
+        ore = []
+        note = []
+        classe = []
         
         k = 0
         
         for i in range(len(df['Classe'])):
             if classeToFind in df['Classe'][i]:
                 
-                docente[k] = df['Doc.Assente'][i]
-                ore[k] = df['Ora'][i]
-                note[k] = df['Note'][i]
-                classe[k] = df['Classe'][i]
+                docente.append(df['Doc.Assente'][i])
+                ore.append(df['Ora'][i])
+                note.append(df['Note'][i])
+                classe.append(df['Classe'][i])
 
-                k = k + 1
+                k += 1
             if i == len(df['Classe'])-1 and k == 0:
                 stringa = f"Nessuna variazione orario per la {classeToFind}."
         
-        for l in range (k):
-            if l == 0:
+        stringa = ""
+        l = 0
+        
+        while (l < k):
+            if l < len(docente)-1:
                 if docente[l] == docente[l+1]:
-                    stringa = f"Ore: {ore[l]} e {ore[l+1]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}"
+                    stringa += f"Ore: {ore[l]} e {ore[l+1]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}\n\n"
+                    l += 2
                 else:
-                    stringa = f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}" 
+                    stringa += f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}\n\n" 
+                    l += 1
+            else:
+                stringa += f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}\n\n" 
+                l += 1
 
-    
     return stringa
