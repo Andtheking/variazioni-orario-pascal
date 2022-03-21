@@ -195,12 +195,15 @@ def main():
     
     dp.add_error_handler(error)
     
-    schedule.every().monday.at("07:40").do(mandaMessaggio)
-    schedule.every().tuesday.at("07:40").do(mandaMessaggio)
-    schedule.every().wednesday.at("07:40").do(mandaMessaggio)
-    schedule.every().thursday.at("07:40").do(mandaMessaggio)
-    schedule.every().friday.at("07:40").do(mandaMessaggio)
-    schedule.every().saturday.at("07:40").do(mandaMessaggio)
+
+    schedule.every().day.at("00:05").do(GetUrl)
+
+    schedule.every().monday.at("06:00").do(mandaMessaggio)
+    schedule.every().tuesday.at("06:00").do(mandaMessaggio)
+    schedule.every().wednesday.at("06:00").do(mandaMessaggio)
+    schedule.every().thursday.at("06:00").do(mandaMessaggio)
+    schedule.every().friday.at("06:00").do(mandaMessaggio)
+    schedule.every().saturday.at("06:00").do(mandaMessaggio)
     
 
     
