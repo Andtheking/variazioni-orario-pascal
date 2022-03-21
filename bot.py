@@ -11,11 +11,17 @@ from telegram.ext import (
 )
 
 from sito import *
-import os, requests, logging, schedule
 from threading import Thread
 from time import sleep
+from urllib.parse import urlparse
+
+import os, requests, logging, schedule, redis
+
 
 PORT = int(os.environ.get('PORT','8443'))
+
+url = urlparse(os.environ.get("REDIS_URL"))
+red = redis.Redis(host=url.hostname, port=url.port, username=url.username, password=url.password, ssl=True, ssl_cert_reqs=None)
 
 CLASSE = 0
 ID_AND = "245996916"
