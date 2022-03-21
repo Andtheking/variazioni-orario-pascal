@@ -2,13 +2,11 @@ from logging import exception
 import string
 import requests, pandas as pd
 import os, datetime
-
+import logging
 
 
 def Main(classeToFind):
     # Fill in your details here to be posted to the login form.
-    classeToFind = classeToFind.replace('/impostaClasse', '')
-    classeToFind = classeToFind.strip()
     stringa = 'Qualcosa non va'
     
     payload = {
@@ -19,13 +17,22 @@ def Main(classeToFind):
 
     # Use 'with' to ensure the session context is closed after use.
     with requests.Session() as s:
+        
         p = s.post(url, data=payload)
         
         #print (p.text)
 
-        r = s.get('http://www.sostituzionidocenti.com/fe/sostituzioni.php?offset=0')
+        #ora = datetime.datetime.now().time()
+        
+        # if ora < datetime.time(3,0,0,0,'Europe/Rome') and ora >= datetime.time(7,0,0,0,'Europe/Rome'):
+        #     
+        # else:
+        #     logging.Logger.info(f"Visto l'orario \"{ora}\" non scarico l'html. Uso quello già scaricato")
+        
+        r = s.get('http://www.sostituzionidocenti.com/fe/sostituzioni.php?offset=0')    
         
         oggi = datetime.date.today().strftime('%A')
+        
         if oggi != "Sunday":
             f = open('html.html', 'w')
             f.write(r.text)
