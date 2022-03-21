@@ -145,6 +145,8 @@ def mandaMessaggio():
         dato = riga.split(',')
         id = dato[0]
         requests.post(f'https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id=245996916&text={Main(dato[1])}')
+    
+    file.close()
 
 def main():
     updater = Updater(TOKEN, use_context=True)
