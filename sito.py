@@ -10,6 +10,9 @@ PAYLOAD = {
         'pass': 'PC88075LD'
     }
 
+logger = logging.getLogger(__name__)
+
+
 def GetUrl():
     with requests.Session() as s:
         
@@ -23,9 +26,9 @@ def GetUrl():
             f = open('html.html', 'w')
             f.write(r.text)
             f.close()
-            logging.logger.info('HTML stampato su file html.html con successo')
+            logger.info('HTML stampato su file html.html con successo')
         else:
-            logging.logger.info('Oggi è Domenica, non ci sono variazioni. Puoi riprovare a mezzanotte, altrimenti domani mattina alle 7.40')
+            logger.info('Oggi è Domenica, non ci sono variazioni. Puoi riprovare a mezzanotte, altrimenti domani mattina alle 7.40')
 
 def Main(classeToFind):
 
