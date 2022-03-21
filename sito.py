@@ -11,15 +11,6 @@ def Main(classeToFind):
     classeToFind = classeToFind.strip()
     stringa = 'Qualcosa non va'
     
-    if len(classeToFind) != 2:
-        return "Non hai inserito una classe"
-    try:
-        if int(classeToFind[0:1]) < 0 and int(classeToFind[0:1]) > 5:
-            return "Non hai inserito una classe"
-    except Exception as ex:
-        print(ex)
-        return "Non hai inserito una classe"
-
     payload = {
         'pass': 'PC88075LD'
     }

@@ -47,6 +47,19 @@ def ClasseImpostata(update, context):
     
     id = update.message.from_user.id
     
+    if len(update.message.text) != 2:
+        update.message.reply_text("Non hai inserito una classe")
+        return
+    try:
+        if int(update.message.text[0:1]) < 0 and int(update.message.text[0:1]) > 5:
+            update.message.reply_text("Non hai inserito una classe")
+            return
+    except Exception as ex:
+        logging.warning(ex)
+        update.message.reply_text("Non hai inserito una classe")
+        return
+
+
     file = open('utenti.txt', 'r+')
     testoFile = file.read()
     righe = testoFile.split('\n')
@@ -55,8 +68,8 @@ def ClasseImpostata(update, context):
         dato = riga.split(',')
         i += 1
 
+        
         if str(id) in dato[0]:
-            
             esiste = True
             righe[i-1] = f"{dato[0]},{str(update.message.text)}"
             break
