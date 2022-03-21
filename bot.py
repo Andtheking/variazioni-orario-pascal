@@ -18,7 +18,7 @@ from time import sleep
 PORT = int(os.environ.get('PORT','8443'))
 
 CLASSE = 0
-
+ID_AND = "245996916"
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -144,7 +144,7 @@ def mandaMessaggio():
     for riga in righe:    
         dato = riga.split(',')
         id = dato[0]
-        requests.post(f'https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id=245996916&text={Main(dato[1])}')
+        requests.post(f'https://api.telegram.org/bot5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4/sendMessage?chat_id={id}&text={Main(dato[1])}.%20%20%20%20Al%20momento%20la%20classe%20non%20viene%20salvata.%20Rimedierò%20prima%20o%20poi.')
     
     file.close()
 
