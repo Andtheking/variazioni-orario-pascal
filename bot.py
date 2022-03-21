@@ -46,12 +46,13 @@ def impostaClasse(update, context):
 def ClasseImpostata(update, context):
     
     id = update.message.from_user.id
+    messaggio = str(update.message.text).upper()
     
-    if len(update.message.text) != 2:
+    if len(messaggio) != 2:
         update.message.reply_text("Non hai inserito una classe")
         return
     try:
-        if int(update.message.text[0:1]) < 0 and int(update.message.text[0:1]) > 5:
+        if int(messaggio[0:1]) < 0 and int(messaggio[0:1]) > 5:
             update.message.reply_text("Non hai inserito una classe")
             return
     except Exception as ex:
@@ -71,7 +72,7 @@ def ClasseImpostata(update, context):
         
         if str(id) in dato[0]:
             esiste = True
-            righe[i-1] = f"{dato[0]},{str(update.message.text)}"
+            righe[i-1] = f"{dato[0]},{str(messaggio)}"
             break
             
         else:
@@ -79,9 +80,9 @@ def ClasseImpostata(update, context):
             esiste = False
            
     if esiste == False:
-        file.write(f"\n{str(id)},{str(update.message.text)}".upper())
+        file.write(f"\n{str(id)},{str(messaggio)}".upper())
         file.close()
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{update.message.text}\" come classe alle {update.message.date}")
+        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
         update.message.reply_text("Classe impostata.")
     else:
         
@@ -98,8 +99,8 @@ def ClasseImpostata(update, context):
                 file.write(f"{str(riga)}\n")
         file.close()
         
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {dato[1]} a {str(update.message.text)}. Data e ora: {update.message.date}")
-        update.message.reply_text(f"Avevi già una classe impostata ({dato[1]}), l'ho cambiata in {str(update.message.text)}.")
+        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {dato[1]} a {str(messaggio)}. Data e ora: {update.message.date}")
+        update.message.reply_text(f"Avevi già una classe impostata ({dato[1]}), l'ho cambiata in {str(messaggio)}.")
 
     return ConversationHandler.END
 
