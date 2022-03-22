@@ -1,6 +1,7 @@
 TOKEN = '5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4'
 
 
+from warnings import catch_warnings
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -47,7 +48,7 @@ def schedule_checker():
 
 def help(update, context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Imposta una classe con /impostaClasse: clicca il comando (o scrivilo) e poi manda la classe tipo 3A, 2F, 5I. Con /classe puoi vedere la classe impostata al momento. Ogni mattina alle 7.40 ti arriverà una notifica con le variazioni orario del giorno.")
+    update.message.reply_text("Imposta la tua classe con /impostaClasse: dopo averla impostata, la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno;\nVisualizza la tua classe con /classe;\nUsa /variazioni <CLASSE> per avere le variazioni orario di una qualsiasi classe.")
 
 def start(update,context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -126,14 +127,24 @@ def mandaMessaggio():
             id = utente[0]
             requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
     
+def variazioni(update, context):
+    messaggio = str(update.message.text).replace('/variazioni ', '')
+    try:
+        if (int(messaggio[0:1]) > 0 and int(messaggio[0:1]) < 6) and len(messaggio) == 2: 
+            requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={ID_TELEGRAM_AND}&text={Main(messaggio)}')
+        else:
+            update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
+    except:
+        update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
+
+def discord(update, context):
+    update.message.reply_text('Il discord del Pascal: https://discord.gg/UmUu6ZNMJy')
 
 def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
     requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id=245996916&text=Bot%20online!')
      
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help))
     
     imposta_classe = ConversationHandler(
         entry_points=[CommandHandler("impostaClasse", impostaClasse)],
@@ -143,11 +154,18 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)],
     )
     
-    dp.add_handler(CommandHandler('classe', classe))
+    dp.add_handler(CommandHandler("start", start)) 
+    dp.add_handler(CommandHandler("help", help)) # Aiuto su come si usa il bot
 
-    dp.add_handler(imposta_classe)
+    dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
+
+    dp.add_handler(CommandHandler('variazioni', variazioni)) # Visualizza variazioni di un'altra classe del giorno
+
+    dp.add_handler(CommandHandler('discord', discord)) # Discord del pascal
+
+    dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
-    dp.add_error_handler(error)
+    dp.add_error_handler(error) # In caso di errore:
     
 
     #schedule.every().day.at("00:05").do(GetUrl)
@@ -159,12 +177,13 @@ def main():
     schedule.every().friday.at("06:30").do(mandaMessaggio)
     schedule.every().saturday.at("06:30").do(mandaMessaggio)
     
-
+    
     
 
     Thread(target=schedule_checker).start()
 
     updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
+    #updater.start_polling()
     updater.idle()
 
 if __name__ == '__main__':
