@@ -48,7 +48,8 @@ def Main(classeToFind):
     ore = []
     note = []
     classe = []
-    
+    sostituto = []
+
     k = 0
     
     
@@ -59,6 +60,7 @@ def Main(classeToFind):
             ore.append(df['Ora'][i])
             note.append(df['Note'][i])
             classe.append(df['Classe'][i])
+            sostituto.append(df['Sost.1'])
 
             k += 1
         if i == len(df['Classe'])-1 and k == 0:
@@ -69,13 +71,13 @@ def Main(classeToFind):
     while (l < k):
         if l < len(docente)-1:
             if docente[l] == docente[l+1]:
-                stringa += f"Ore: {ore[l]} e {ore[l+1]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}\n\n"
+                stringa += f"Ore: {ore[l]} e {ore[l+1]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nSostituito da: {sostituto[l]}\nNote: {note[l]}\n\n"
                 l += 2
             else:
-                stringa += f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}\n\n" 
+                stringa += f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nSostituito da: {sostituto[l]}\nNote: {note[l]}\n\n" 
                 l += 1
         else:
-            stringa += f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nNote: {note[l]}\n\n" 
+            stringa += f"Ora: {ore[l]}\nClasse(Aula): {classe[l]}\nDocente assente: {docente[l]}\nSostituito da: {sostituto[l]}\nNote: {note[l]}\n\n" 
             l += 1
 
     return stringa
