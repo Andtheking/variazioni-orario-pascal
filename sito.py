@@ -60,7 +60,7 @@ def Main(classeToFind):
             ore.append(df['Ora'][i])
             note.append(df['Note'][i])
             classe.append(df['Classe'][i])
-            sostituto.append(df['Sost.1'])
+            sostituto.append(df['Sost.1'][i])
 
             k += 1
         if i == len(df['Classe'])-1 and k == 0:
