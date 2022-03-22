@@ -48,7 +48,7 @@ def schedule_checker():
 
 def help(update, context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Imposta la tua classe con /impostaClasse: dopo averla impostata, la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno;\nVisualizza la tua classe con /classe;\nUsa /variazioni <CLASSE> per avere le variazioni orario di una qualsiasi classe.")
+    update.message.reply_text("Imposta la tua classe con /impostaClasse: dopo averla impostata, la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno;\nVisualizza la tua classe con /classe;\nUsa /variazioni <CLASSE> per avere le variazioni orario di una qualsiasi classe.\n\nAttenzione: con /variazioni hai le variazioni DEL GIORNO ATTUALE, quindi prima di 00:00 è un po' useless.") 
 
 def start(update,context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -118,6 +118,7 @@ def cancel(update, context):
     return ConversationHandler.END
 
 def mandaMessaggio():
+    logger.info(f"Variazioni orario mandate agli utenti.")
     mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
     idInTabella = mycursor.fetchall()
@@ -128,10 +129,13 @@ def mandaMessaggio():
             requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
     
 def variazioni(update, context):
+    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     messaggio = str(update.message.text).replace('/variazioni ', '')
+    id = update.message.from_user.id
     try:
         if (int(messaggio[0:1]) > 0 and int(messaggio[0:1]) < 6) and len(messaggio) == 2: 
-            requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={ID_TELEGRAM_AND}&text={Main(messaggio)}')
+            logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la classe \"{messaggio}\" alle {update.message.date}")
+            requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(messaggio)}')
         else:
             update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
     except:
