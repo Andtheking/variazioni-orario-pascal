@@ -19,7 +19,12 @@ import mysql.connector
 import os, requests, logging, schedule, redis
 
 
-mydb = mysql.connector.connect('mysql://koepuzylpoyuhzkq:zurn3w7ul0odctg2@ilzyz0heng1bygi8.chr7pe7iynqr.eu-west-1.rds.amazonaws.com:3306/wnci1nl0vgnh813j')
+mydb = mysql.connector.connect(
+  host="ilzyz0heng1bygi8.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
+  user="koepuzylpoyuhzkq",
+  password="zurn3w7ul0odctg2",
+  database="wnci1nl0vgnh813j"
+)
 
 
 mycursor = mydb.cursor(buffered=True)
