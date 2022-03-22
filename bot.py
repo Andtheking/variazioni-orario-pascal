@@ -134,7 +134,6 @@ def variazioni(update, context):
     id = update.message.from_user.id
     try:
         if (int(messaggio[0:1]) > 0 and int(messaggio[0:1]) < 6) and len(messaggio) == 2: 
-            logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la classe \"{messaggio}\" alle {update.message.date}")
             requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(messaggio)}')
         else:
             update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
