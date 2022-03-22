@@ -10,6 +10,10 @@ PAYLOAD = {
         'pass': 'PC88075LD'
     }
 
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,11 +32,11 @@ def GetUrl():
             f.close()
             logger.info('HTML stampato su file html.html con successo')
         else:
-            logger.info('Oggi è Domenica, non ci sono variazioni. Puoi riprovare a mezzanotte, altrimenti domani mattina alle 7.40')
+            logger.info('Oggi è Domenica, non ci sono variazioni.')
 
 def Main(classeToFind):
 
-    stringa = 'Qualcosa non va'
+    stringa = ''
     
     GetUrl()
         
@@ -41,14 +45,12 @@ def Main(classeToFind):
     df.head()
 
     docente = []
-    k = 0
-    
-    docente = []
     ore = []
     note = []
     classe = []
     
     k = 0
+    
     
     for i in range(len(df['Classe'])):
         if classeToFind in df['Classe'][i]:
@@ -62,7 +64,6 @@ def Main(classeToFind):
         if i == len(df['Classe'])-1 and k == 0:
             stringa = f"Nessuna variazione orario per la {classeToFind}."
     
-    stringa = ""
     l = 0
     
     while (l < k):

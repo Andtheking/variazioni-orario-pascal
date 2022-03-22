@@ -86,50 +86,6 @@ def ClasseImpostata(update, context):
         mycursor.execute(f'UPDATE utenti SET classe=\"{messaggio}\" WHERE id=\"{id}\";')
         logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {update.message.date}")
         update.message.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
-
-
-    '''# Robo che potrebbe servirmi se database va male
-    
-
-
-    # file = open('utenti.txt', 'r+')
-    # testoFile = file.read()
-    # righe = testoFile.split('\n')
-    # i = 0
-    # for riga in righe:    
-    #     dato = riga.split(',')
-    #     i += 1
-    # 
-    #     
-    #     if str(id) in dato[0]:
-    #         esiste = True
-    #         righe[i-1] = f"{dato[0]},{str(messaggio)}"
-    #         break
-    #         
-    #     else:
-    #         logger.info('Utente non trovato')
-    #         esiste = False
-    #        
-    # if esiste == False:
-    #     file.write(f"\n{str(id)},{str(messaggio)}".upper())
-    #     file.close()
-    #     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
-    #     update.message.reply_text("Classe impostata.")
-    # else:
-    #     
-    #     file.truncate(0)
-    #     file.close()
-    #     
-    #     i = 0
-    #     file = open('utenti.txt', 'w')
-    #     for riga in righe:
-    #         i += 1
-    #         if i == len(righe):
-    #             file.write(f"{str(riga)}")
-    #         else:
-    #             file.write(f"{str(riga)}\n")
-    #     file.close()
-    '''
     
     mydb.commit()
     
