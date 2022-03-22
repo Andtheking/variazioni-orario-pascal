@@ -19,12 +19,7 @@ import mysql.connector
 import os, requests, logging, schedule, redis
 
 
-mydb = mysql.connector.connect(
-  host="sql4.freemysqlhosting.net",
-  user="sql4480554",
-  password="RSvsJVaa5q",
-  database="sql4480554"
-)
+mydb = mysql.connector.connect('mysql://koepuzylpoyuhzkq:zurn3w7ul0odctg2@ilzyz0heng1bygi8.chr7pe7iynqr.eu-west-1.rds.amazonaws.com:3306/wnci1nl0vgnh813j')
 
 
 mycursor = mydb.cursor(buffered=True)
@@ -88,8 +83,6 @@ def ClasseImpostata(update, context):
         update.message.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
     
     mydb.commit()
-    
-    
 
     return ConversationHandler.END
 
