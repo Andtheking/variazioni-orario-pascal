@@ -171,7 +171,7 @@ def main():
     dp.add_error_handler(error) # In caso di errore:
     
 
-    mandaMessaggio()
+    
 
     #schedule.every().day.at("00:05").do(GetUrl)
 
