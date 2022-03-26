@@ -141,20 +141,21 @@ def variazioni(update, context):
         update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
 
 def discord(update, context):
-    update.message.reply_text('Il discord del Pascal: https://discord.gg/UmUu6ZNMJy')
+    update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
 
 def off(update, context):
     id = update.message.from_user.id
+    
     mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
     update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
 
+    mydb.commit()
 
 
 
 def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
-    requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id=245996916&text=Bot%20online!')
      
     
     imposta_classe = ConversationHandler(
