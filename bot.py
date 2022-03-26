@@ -100,7 +100,7 @@ def classe(update, context):
     idInTabella = mycursor.fetchall()
 
     if len(idInTabella) == 0:
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. Data e ora: {update.message.date}")
+        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({messaggio}) Data e ora: {update.message.date}")
         update.message.reply_text(f"Non hai una classe impostata. Impostala con /impostaClasse")
 
     else:
@@ -146,10 +146,20 @@ def discord(update, context):
 def off(update, context):
     id = update.message.from_user.id
     
-    mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
-    update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
+    mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
+    idInTabella = mycursor.fetchall()
 
-    mydb.commit()
+    if len(idInTabella) == 0:
+        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
+        update.message.reply_text(f"Non hai una classe impostata. Se hai provato a disattivare le notifiche non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
+
+    else:
+        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
+        mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
+        update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
+        mydb.commit()
+    
+
 
 
 
