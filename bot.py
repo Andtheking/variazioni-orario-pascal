@@ -145,7 +145,7 @@ def discord(update, context):
 
 def off(update, context):
     id = update.message.from_user.id
-    mycursor.execute(f'REMOVE FROM utenti WHERE id=\"{id}\";')
+    mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
     update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
 
 
