@@ -193,13 +193,14 @@ def main():
     
 
     #schedule.every().day.at("00:05").do(GetUrl)
-
-    schedule.every().monday.at("06:30").do(mandaMessaggio)
-    schedule.every().tuesday.at("06:30").do(mandaMessaggio)
-    schedule.every().wednesday.at("06:30").do(mandaMessaggio)
-    schedule.every().thursday.at("06:30").do(mandaMessaggio)
-    schedule.every().friday.at("06:30").do(mandaMessaggio)
-    schedule.every().saturday.at("06:30").do(mandaMessaggio)
+    
+    ORARIO = "05:30"
+    schedule.every().monday.at(ORARIO).do(mandaMessaggio)
+    schedule.every().tuesday.at(ORARIO).do(mandaMessaggio)
+    schedule.every().wednesday.at(ORARIO).do(mandaMessaggio)
+    schedule.every().thursday.at(ORARIO).do(mandaMessaggio)
+    schedule.every().friday.at(ORARIO).do(mandaMessaggio)
+    schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
     
     
     
