@@ -201,7 +201,7 @@ def main():
     schedule.every().thursday.at(ORARIO).do(mandaMessaggio)
     schedule.every().friday.at(ORARIO).do(mandaMessaggio)
     schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
-    
+    mandaMessaggio()
     
     
 
