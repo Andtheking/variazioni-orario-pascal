@@ -202,7 +202,7 @@ def main():
     schedule.every().friday.at(ORARIO).do(mandaMessaggio)
     schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
     
-    mandaMessaggio()
+    
     
 
     Thread(target=schedule_checker).start()
