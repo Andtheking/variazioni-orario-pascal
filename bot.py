@@ -194,7 +194,7 @@ def main():
 
     #schedule.every().day.at("00:05").do(GetUrl)
     
-    ORARIO = "05:30"
+    ORARIO = "06:30"
     schedule.every().monday.at(ORARIO).do(mandaMessaggio)
     schedule.every().tuesday.at(ORARIO).do(mandaMessaggio)
     schedule.every().wednesday.at(ORARIO).do(mandaMessaggio)
@@ -202,7 +202,7 @@ def main():
     schedule.every().friday.at(ORARIO).do(mandaMessaggio)
     schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
     
-    
+    mandaMessaggio()
     
 
     Thread(target=schedule_checker).start()
