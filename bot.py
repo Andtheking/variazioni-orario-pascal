@@ -59,6 +59,27 @@ def impostaClasse(update, context):
     update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
     return CLASSE
 
+
+def broadcast(update, contex):
+    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    if (update.message.from_user['id'] == int(ID_TELEGRAM_AND)):
+        logger.info("Ed ha il permesso")
+
+        mycursor.execute(f'SELECT id, username, classe FROM utenti')
+        update.message.reply_text(f'Messaggio inviato: "{update.message.text.replace("/broadcast ", "")}"')
+    
+        idInTabella = mycursor.fetchall()
+        
+        if len(idInTabella) != 0:    
+            for utente in idInTabella:
+                id = utente[0]
+                requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={update.message.text.replace("/broadcast ","")}')
+                logger.info(f"Messaggio \"{update.message.text.replace('/broadcast ', '')}\" inviato a {utente[1]}, {utente[0]}")
+    else:
+        update.message.reply_text("Non hai il permesso.")
+        logger.info("E non ha il permesso")
+
+
 def ClasseImpostata(update, context):
     
     id = update.message.from_user.id
@@ -185,6 +206,8 @@ def main():
 
     dp.add_handler(CommandHandler('discord', discord)) # Discord del pascal
 
+    dp.add_handler(CommandHandler('broadcast', broadcast))
+
     dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
     dp.add_error_handler(error) # In caso di errore:
@@ -206,9 +229,9 @@ def main():
 
     Thread(target=schedule_checker).start()
 
-    updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
-    #updater.start_polling()
-    updater.idle()
+    # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
+    updater.start_polling()
+    # updater.idle()
 
 if __name__ == '__main__':
     main()
