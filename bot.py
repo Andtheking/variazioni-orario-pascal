@@ -1,7 +1,7 @@
-TOKEN = '5264178692:AAG2aN936LktECE_GtEgmzONAq8Yvmpb4W4'
+TOKEN = None
+with open("Roba sensibile/token.txt","r") as file:
+    TOKEN = file.read()
 
-
-from warnings import catch_warnings
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -14,17 +14,23 @@ from telegram.ext import (
 from sito import *
 from threading import Thread
 from time import sleep
-from urllib.parse import urlparse
 import mysql.connector
 
-import os, requests, logging, schedule, redis
+import os, requests, logging, schedule
 
+# 0 = Host
+# 1 = User
+# 2 = Password
+# 3 = Database
+
+with open("Roba sensibile/database.txt","r") as file:
+    credenziali_database = file.read().splitlines()
 
 mydb = mysql.connector.connect(
-  host="ilzyz0heng1bygi8.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
-  user="koepuzylpoyuhzkq",
-  password="zurn3w7ul0odctg2",
-  database="wnci1nl0vgnh813j"
+  host=credenziali_database[0],
+  user=credenziali_database[1],
+  password=credenziali_database[2],
+  database=credenziali_database[3]
 )
 
 
