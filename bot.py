@@ -11,10 +11,18 @@ from telegram.ext import (
     CallbackContext,
 )
 
+from telegram import (
+    Update,
+    Message,
+    User,
+)
+
+
 from sito import *
 from threading import Thread
 from time import sleep
 import mysql.connector
+
 
 import os, requests, logging, schedule
 
@@ -26,7 +34,7 @@ import os, requests, logging, schedule
 with open("Roba sensibile/database.txt","r") as file:
     credenziali_database = file.read().splitlines()
 
-mydb = mysql.connector.connect(
+mydb: mysql.connector.connect(
   host=credenziali_database[0],
   user=credenziali_database[1],
   password=credenziali_database[2],
@@ -52,7 +60,7 @@ def schedule_checker():
         schedule.run_pending()
         sleep(1)
 
-def help(update, context):
+def help(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Imposta la tua classe con /impostaClasse: dopo averla impostata, la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno;\nVisualizza la tua classe con /classe;\nUsa /variazioni <CLASSE> per avere le variazioni orario di una qualsiasi classe.\n\nAttenzione: con /variazioni hai le variazioni DEL GIORNO ATTUALE, quindi prima di 00:00 è un po' useless.") 
 
@@ -60,7 +68,7 @@ def start(update,context):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Versione praticamente quasi finita. Fai /help.")
 
-def impostaClasse(update, context):
+def impostaClasse(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
     return CLASSE
@@ -86,7 +94,7 @@ def broadcast(update, contex):
         logger.info("E non ha il permesso")
 
 
-def ClasseImpostata(update, context):
+def ClasseImpostata(update: Update, context: CallbackContext):
     
     id = update.message.from_user.id
     messaggio = str(update.message.text).upper()
@@ -119,7 +127,7 @@ def ClasseImpostata(update, context):
 
     return ConversationHandler.END
 
-def classe(update, context):
+def classe(update: Update, context: CallbackContext):
     id = update.message.from_user.id
     messaggio = update.message.text
 
@@ -135,11 +143,11 @@ def classe(update, context):
         update.message.reply_text(f"Classe attuale: {idInTabella[0][2]}")
 
 
-def error(update, context):
+def error(update: Update, context: CallbackContext):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
-def cancel(update, context):
+def cancel(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
@@ -155,7 +163,7 @@ def mandaMessaggio():
             id = utente[0]
             requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
     
-def variazioni(update, context):
+def variazioni(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     messaggio = str(update.message.text).replace('/variazioni ', '')
     id = update.message.from_user.id
@@ -167,10 +175,10 @@ def variazioni(update, context):
     except:
         update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
 
-def discord(update, context):
+def discord(update: Update, context: CallbackContext):
     update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
 
-def off(update, context):
+def off(update: Update, context: CallbackContext):
     id = update.message.from_user.id
     
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
