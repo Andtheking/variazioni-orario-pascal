@@ -167,16 +167,18 @@ def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
 
+MANDO = False
 def mandaMessaggio():
-    database_connection()
-    logger.info(f"Variazioni orario mandate agli utenti.")
-    mycursor.execute(f'SELECT id, username, classe FROM utenti')
+    if MANDO:
+	    database_connection()
+	    logger.info(f"Variazioni orario mandate agli utenti.")
+	    mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
-    idInTabella = mycursor.fetchall()
-    database_disconnection()
-    if len(idInTabella) != 0:    
-        for utente in idInTabella:
-            id = utente[0]
+	    idInTabella = mycursor.fetchall()
+	    database_disconnection()
+	    if len(idInTabella) != 0:    
+	        for utente in idInTabella:
+        	    id = utente[0]
             requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
     
 def variazioni(update: Update, context: CallbackContext):
