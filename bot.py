@@ -160,11 +160,11 @@ def classe(update: Update, context: CallbackContext):
 
 def error(update: Update, context: CallbackContext):
     """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
-    
     if (context.error is requests.exceptions.ConnectionError):
         logger.warn("Qualcosa è andato storto con la connessione, dormo 2 secondi")
         sleep(2)
+    else:
+        logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 def cancel(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
