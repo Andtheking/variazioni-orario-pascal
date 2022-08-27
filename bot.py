@@ -1,5 +1,7 @@
 TOKEN = None
 
+ID_CANALE_LOG = '-1001741378490'
+
 with open("Roba sensibile/token.txt","r") as file:
     TOKEN = file.read().splitlines()[0]
 
@@ -66,6 +68,7 @@ def database_connection():
 	)
 
 	mycursor = mydb.cursor(buffered=True)
+
 def database_disconnection():
 	global mydb
 	global mycursor
@@ -85,7 +88,6 @@ def impostaClasse(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
     return CLASSE
-
 
 def broadcast(update, contex):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -165,6 +167,7 @@ def error(update: Update, context: CallbackContext):
         sleep(2)
     else:
         logger.warning('Update "%s" caused error "%s"', update, context.error)
+        context.bot.send_message(ID_CANALE_LOG, text=f'{context.bot.name}\nUpdate "{update}" caused error "{context.error}')
 
 def cancel(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
