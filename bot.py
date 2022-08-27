@@ -1,7 +1,7 @@
 TOKEN = None
 with open("Roba sensibile/token.txt","r") as file:
-    TOKEN = file.read()
-
+    TOKEN = file.read().splitlines()[0]
+print(f"\"{TOKEN}\"")
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -34,15 +34,7 @@ import os, requests, logging, schedule
 with open("Roba sensibile/database.txt","r") as file:
     credenziali_database = file.read().splitlines()
 
-mydb: mysql.connector.connect(
-  host=credenziali_database[0],
-  user=credenziali_database[1],
-  password=credenziali_database[2],
-  database=credenziali_database[3]
-)
 
-
-mycursor = mydb.cursor(buffered=True)
 
 
 PORT = int(os.environ.get('PORT','8443'))
@@ -59,6 +51,27 @@ def schedule_checker():
     while True:
         schedule.run_pending()
         sleep(1)
+
+mydb = None
+mycursor = None
+
+def database_connection():
+	global mydb
+	global mycursor
+	mydb = mysql.connector.connect(
+	  host=credenziali_database[0],
+	  user=credenziali_database[1],
+	  password=credenziali_database[2],
+	  database=credenziali_database[3]
+	)
+
+	mycursor = mydb.cursor(buffered=True)
+def database_disconnection():
+	global mydb
+	global mycursor
+	mydb.disconnect() if mydb != None else print("No database")
+	mydb = None
+	mycursor = None
 
 def help(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -95,7 +108,7 @@ def broadcast(update, contex):
 
 
 def ClasseImpostata(update: Update, context: CallbackContext):
-    
+
     id = update.message.from_user.id
     messaggio = str(update.message.text).upper()
     
@@ -110,7 +123,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
         logging.warning(ex)
         update.message.reply_text("Non hai inserito una classe")
         return
-    
+    database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
 
@@ -124,15 +137,17 @@ def ClasseImpostata(update: Update, context: CallbackContext):
         update.message.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
     
     mydb.commit()
-
+    database_disconnection()
     return ConversationHandler.END
 
 def classe(update: Update, context: CallbackContext):
     id = update.message.from_user.id
     messaggio = update.message.text
 
+    database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
+    database_disconnection()
 
     if len(idInTabella) == 0:
         logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({messaggio}) Data e ora: {update.message.date}")
@@ -153,11 +168,12 @@ def cancel(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 def mandaMessaggio():
+    database_connection()
     logger.info(f"Variazioni orario mandate agli utenti.")
     mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
     idInTabella = mycursor.fetchall()
-    
+    database_disconnection()
     if len(idInTabella) != 0:    
         for utente in idInTabella:
             id = utente[0]
@@ -180,7 +196,7 @@ def discord(update: Update, context: CallbackContext):
 
 def off(update: Update, context: CallbackContext):
     id = update.message.from_user.id
-    
+    database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
 
@@ -193,7 +209,7 @@ def off(update: Update, context: CallbackContext):
         mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
         update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
         mydb.commit()
-    
+    database_disconnection()
 
 
 
