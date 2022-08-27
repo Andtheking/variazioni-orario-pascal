@@ -1,7 +1,8 @@
 TOKEN = None
+
 with open("Roba sensibile/token.txt","r") as file:
     TOKEN = file.read().splitlines()[0]
-print(f"\"{TOKEN}\"")
+
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -16,7 +17,6 @@ from telegram import (
     Message,
     User,
 )
-
 
 from sito import *
 from threading import Thread
@@ -217,54 +217,58 @@ def off(update: Update, context: CallbackContext):
 
 
 def main():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
-     
-    
-    imposta_classe = ConversationHandler(
-        entry_points=[CommandHandler("impostaClasse", impostaClasse)],
-        states={
-            CLASSE: [MessageHandler(Filters.text & ~ Filters.command, ClasseImpostata)],
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-    )
-    
-    dp.add_handler(CommandHandler("start", start)) 
-    dp.add_handler(CommandHandler("help", help)) # Aiuto su come si usa il bot
+    try:
+        updater = Updater(TOKEN, use_context=True)
+        dp = updater.dispatcher
+        
+        
+        imposta_classe = ConversationHandler(
+            entry_points=[CommandHandler("impostaClasse", impostaClasse)],
+            states={
+                CLASSE: [MessageHandler(Filters.text & ~ Filters.command, ClasseImpostata)],
+            },
+            fallbacks=[CommandHandler('cancel', cancel)],
+        )
+        
+        dp.add_handler(CommandHandler("start", start)) 
+        dp.add_handler(CommandHandler("help", help)) # Aiuto su come si usa il bot
 
-    dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
+        dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
 
-    dp.add_handler(CommandHandler('variazioni', variazioni)) # Visualizza variazioni di un'altra classe del giorno
+        dp.add_handler(CommandHandler('variazioni', variazioni)) # Visualizza variazioni di un'altra classe del giorno
 
-    dp.add_handler(CommandHandler('discord', discord)) # Discord del pascal
+        dp.add_handler(CommandHandler('discord', discord)) # Discord del pascal
 
-    dp.add_handler(CommandHandler('broadcast', broadcast))
+        dp.add_handler(CommandHandler('broadcast', broadcast))
 
-    dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
-    
-    dp.add_error_handler(error) # In caso di errore:
-    
-    dp.add_handler(CommandHandler('off',off))
-    
+        dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
+        
+        dp.add_error_handler(error) # In caso di errore:
+        
+        dp.add_handler(CommandHandler('off',off))
+        
 
-    #schedule.every().day.at("00:05").do(GetUrl)
-    
-    ORARIO = "06:30"
-    schedule.every().monday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().tuesday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().wednesday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().thursday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().friday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
-    
-    
-    
+        #schedule.every().day.at("00:05").do(GetUrl)
+        
+        ORARIO = "06:30"
+        schedule.every().monday.at(ORARIO).do(mandaMessaggio)
+        schedule.every().tuesday.at(ORARIO).do(mandaMessaggio)
+        schedule.every().wednesday.at(ORARIO).do(mandaMessaggio)
+        schedule.every().thursday.at(ORARIO).do(mandaMessaggio)
+        schedule.every().friday.at(ORARIO).do(mandaMessaggio)
+        schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
+        
+        
+        
 
-    Thread(target=schedule_checker).start()
+        Thread(target=schedule_checker).start()
 
-    # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
-    updater.start_polling()
-    # updater.idle()
+        # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
+        updater.start_polling()
+        updater.idle()
+    except requests.exceptions.ConnectionError:
+        logger.warn("Qualcosa è andato storto con la connessione, dormo 2 secondi")
+        sleep(2)
 
 if __name__ == '__main__':
     main()
