@@ -163,6 +163,7 @@ def error(update: Update, context: CallbackContext):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     
     if (context.error is requests.exceptions.ConnectionError):
+        logger.warn("Qualcosa è andato storto con la connessione, dormo 2 secondi")
         sleep(2)
 
 def cancel(update: Update, context: CallbackContext):
