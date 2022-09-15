@@ -90,6 +90,7 @@ def impostaClasse(update: Update, context: CallbackContext):
     return CLASSE
 
 def broadcast(update, contex):
+    database_connection()
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     if (update.message.from_user['id'] == int(ID_TELEGRAM_AND)):
         logger.info("Ed ha il permesso")
@@ -107,6 +108,7 @@ def broadcast(update, contex):
     else:
         update.message.reply_text("Non hai il permesso.")
         logger.info("E non ha il permesso")
+    database_disconnection()
 
 
 def ClasseImpostata(update: Update, context: CallbackContext):
@@ -174,7 +176,7 @@ def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
 
-MANDO = False
+MANDO = True
 def mandaMessaggio():
     if MANDO:
         database_connection()
@@ -270,8 +272,8 @@ def main():
     Thread(target=schedule_checker).start()
 
     # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
-    updater.start_polling()
-    updater.idle()
+    updater.start_polling(timeout=123)
+    #updater.idle()
 
 if __name__ == '__main__':
     main()
