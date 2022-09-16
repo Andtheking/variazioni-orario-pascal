@@ -272,8 +272,8 @@ def main():
     Thread(target=schedule_checker).start()
 
     # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
-    updater.start_polling(timeout=123)
-    #updater.idle()
+    updater.start_polling(timeout=200)
+    updater.idle()
 
 if __name__ == '__main__':
     main()
