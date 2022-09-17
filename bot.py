@@ -173,6 +173,7 @@ def error(update: Update, context: CallbackContext):
 
 def cancel(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
+    database_disconnection()
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
 
