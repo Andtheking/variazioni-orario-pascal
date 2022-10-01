@@ -58,9 +58,9 @@ def leggiPdf(percorsoPdf: str, classeDaCercare):
     #df: list[pd.DataFrame or dict] = read_pdf(percorsoPdf,pages="all", lattice=True)
     ruotaPdf(percorsoPdf)
     percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + "r" + percorsoPdf[percorsoPdf.rindex("/")+1:]
-    df = convert_into(percorsoPdf, "output.csv" , pages="all", lattice=True)
+    df = convert_into(percorsoPdf, "pdfScaricati/output.csv" , pages="all", lattice=True)
     
-    asd = pd.read_csv("output.csv")
+    asd = pd.read_csv("pdfScaricati/output.csv")
     titoli = asd.head()
 
     daRimuovere = asd.columns[0]
