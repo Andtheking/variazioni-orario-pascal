@@ -2,6 +2,8 @@ from tabula import read_pdf, convert_into
 import requests, pandas as pd
 from bs4 import BeautifulSoup
 import PyPDF2
+import os
+
 
 url = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
 
@@ -18,13 +20,12 @@ def scaricaPdf(dataSelezionata: str) -> str:
         (str) percorso pdf scaricato
     """
 
-
+    # L'if si può estendere con degli elif per aggiungere più separatori
     if ('-' in dataSelezionata):
         data = dataSelezionata.split('-')
 
     
-    data[0] = '0'+data[0] if int(data[0]) < 10 else data[0]
-    data[1] = convertiMese(data[1])
+    data[0] = '0' + data[0] if int(data[0]) < 10 else data[0] # In caso il numero è minore di 10 aggiungi lo 0 prima, es: 08,09,10
 
 
     soup = BeautifulSoup(requests.get(url).content, "html.parser").find_all("a")
@@ -37,7 +38,7 @@ def scaricaPdf(dataSelezionata: str) -> str:
             link = linkPdf
 
     if (link == ""):
-        return f"Non ho trovato nulla per il giorno {data[0]} {data[1].capitalize()}"
+        return f"Non ho trovato nulla per il giorno {data[0]}/{data[1]}"
 
     response = requests.get(link)
     
@@ -46,37 +47,28 @@ def scaricaPdf(dataSelezionata: str) -> str:
     
     return f'pdfScaricati/{link[link.rindex("/")+1:]}'
 
+class DocenteAssente:
+    def __init__(self, ora: int, classeAula: str, profAssente: str, sostituti: str, note: str):
+        self.ora = ora # 1
+        self.classeAula = classeAula # "4I(78)"
+        self.profAssente = profAssente # "Nome C."
+        self.sostituti = sostituti # "Nome C."
+        self.note = note # "La classe entra alla 2° ora"
 
-def convertiMese(n):
-    mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre","dicembre"]
-    return mesi[int(n)-1]
+def formattazionePdf(percorsoPdf: str, nomeOutput: str):
 
-
-
-def leggiPdf(percorsoPdf: str, classeDaCercare):
-    
-    #df: list[pd.DataFrame or dict] = read_pdf(percorsoPdf,pages="all", lattice=True)
     ruotaPdf(percorsoPdf)
+    os.remove(percorsoPdf)
+    
     percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + "r" + percorsoPdf[percorsoPdf.rindex("/")+1:]
-    df = convert_into(percorsoPdf, "pdfScaricati/output.csv" , pages="all", lattice=True)
     
-    asd = pd.read_csv("pdfScaricati/output.csv")
-    titoli = asd.head()
+    convert_into(percorsoPdf, f"pdfScaricati/{nomeOutput}.csv" , pages="all", lattice=True)
+    os.remove(percorsoPdf)
 
-    daRimuovere = asd.columns[0]
     
 
-    for riga in asd.values:
-        if (riga[0] == daRimuovere):
-            continue
-        if (classeDaCercare in riga[1]):
-            print(riga)
-
-
-
-
-    #print(df[0])
-
+# Rigorosamente copia-incollato da internet
+# Sauce: https://www.johndcook.com/blog/2015/05/01/rotating-pdf-pages-with-python/
 def ruotaPdf(percorsoPdf: str):
     pdf_in = open(percorsoPdf, 'rb')
     pdf_reader = PyPDF2.PdfFileReader(pdf_in)
@@ -92,14 +84,46 @@ def ruotaPdf(percorsoPdf: str):
     pdf_out.close()
     pdf_in.close()
     
+def leggiPdf(giorno: str):
+    # Giorno per esempio è "1-10" → 1 Ottobre
+    
+
+    if not os.path.exists(f"pdfScaricati/{giorno}.csv"):
+        formattazionePdf(scaricaPdf(giorno),giorno)
+    
+    docentiAssenti: list[DocenteAssente] = []
+    asd = pd.read_csv(f"pdfScaricati/{giorno}.csv")
+    daRimuovere = asd.columns[0]
+
+    for riga in asd.values:
+        riga: str
+        if (riga[0] == daRimuovere):
+            continue
+        #   0      1           2               3           4   5         6         7   8
+        # ['2' '3I\r(69)' 'Spirito F.' 'Collaboratore 1.' '-' 'NO' 'Sorveglianza' nan nan]
+        docentiAssenti.append(DocenteAssente(int(riga[0]),riga[1].replace("\r",""),riga[2],riga[3] + " | " + riga[4],riga[6]))
+    
+    return docentiAssenti
+
+def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente]):
+    stringa = ""
+    
+    for docente in docentiAssenti:
+        if classe in docente.classeAula:
+            stringa += f"Ora: {docente.ora}\nClasse(Aula): {docente.classeAula}\nDocente assente: {docente.profAssente}\nSostituito da: {docente.sostituti.replace(' | ', ' e ')}\nNote: {docente.note}\n\n" 
+
+    print (stringa)
+    
+def main(classeDaCercare: str, giorno: str):
+    docentiAssenti = leggiPdf(giorno)
+    CercaClasse(classeDaCercare, docentiAssenti)
+
 
     
-def main(classeToFind: str):
-    pass
 
 if __name__ == "__main__":
-    leggiPdf(scaricaPdf("1-10"), "3I")
-    main("3I")
+    print("Scrivi la classe e il giorno")
+    main(input(), input())
 
 
 
