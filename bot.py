@@ -20,7 +20,7 @@ from telegram import (
     User,
 )
 
-from sito import *
+from pdf import Main
 from threading import Thread
 from time import sleep
 import mysql.connector
@@ -187,15 +187,33 @@ def mandaMessaggio():
     
 def variazioni(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    messaggio = str(update.message.text).replace('/variazioni ', '')
+    dati = str(update.message.text).replace('/variazioni ', '')
+    
+    if (dati == "/variazioni"):
+        update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+        return
+        
+    datiList = dati.split(" ")
+
+    if len(datiList) != 2 and len(datiList) != 1:
+        return update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+
+    messaggio = datiList[0]
+    giorno = datiList[1] if len(datiList) > 1 else ""
+
     id = update.message.from_user.id
     try:
-        if (int(messaggio[0:1]) > 0 and int(messaggio[0:1]) < 6) and len(messaggio) == 2: 
-            requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(messaggio)}')
+        if (int(messaggio[0:1]) > 0 and int(messaggio[0:1]) < 6) and (len(messaggio) == 2 and (len(giorno)==5) or (len(giorno)==4) or len(giorno) == 0): 
+            if giorno != "":
+                context.bot.send_message(chat_id=id, text=f"{Main(messaggio,giorno)}", parse_mode='Markdown')
+            else:
+                context.bot.send_message(chat_id=id, text=f"{Main(messaggio)}", parse_mode='Markdown')
         else:
-            update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
-    except:
-        update.message.reply_text('Non hai inserito una classe valida. Il formato è: /variazioni 3A')
+            update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+    except Exception as e:
+        # update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
+        context.bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
+        update.message.reply_text("Qualcosa è andato storto, whoops. Nel dubbio riprova")
 
 def discord(update: Update, context: CallbackContext):
     update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
@@ -236,7 +254,7 @@ def main():
     dp.add_handler(CommandHandler("start", start)) 
     dp.add_handler(CommandHandler("help", help)) # Aiuto su come si usa il bot
 
-    dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
+    #dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
 
     dp.add_handler(CommandHandler('variazioni', variazioni)) # Visualizza variazioni di un'altra classe del giorno
 
@@ -244,11 +262,11 @@ def main():
 
     dp.add_handler(CommandHandler('broadcast', broadcast))
 
-    dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
+    #dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
     dp.add_error_handler(error) # In caso di errore:
     
-    dp.add_handler(CommandHandler('off',off))
+    #dp.add_handler(CommandHandler('off',off))
     
 
     #schedule.every().day.at("00:05").do(GetUrl)
