@@ -53,17 +53,27 @@ def convertiMese(n):
 
 
 
-def leggiPdf(percorsoPdf: str):
+def leggiPdf(percorsoPdf: str, classeDaCercare):
     
     #df: list[pd.DataFrame or dict] = read_pdf(percorsoPdf,pages="all", lattice=True)
     ruotaPdf(percorsoPdf)
     percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + "r" + percorsoPdf[percorsoPdf.rindex("/")+1:]
     df = convert_into(percorsoPdf, "output.csv" , pages="all", lattice=True)
-
+    
     asd = pd.read_csv("output.csv")
+    titoli = asd.head()
+
+    daRimuovere = asd.columns[0]
+    
+
+    for riga in asd.values:
+        if (riga[0] == daRimuovere):
+            continue
+        if (classeDaCercare in riga[1]):
+            print(riga)
 
 
-    print (asd[0])
+
 
     #print(df[0])
 
@@ -88,7 +98,7 @@ def main(classeToFind: str):
     pass
 
 if __name__ == "__main__":
-    leggiPdf(scaricaPdf("1-10"))
+    leggiPdf(scaricaPdf("1-10"), "3I")
     main("3I")
 
 
