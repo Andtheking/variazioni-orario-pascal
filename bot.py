@@ -36,9 +36,6 @@ import os, requests, logging, schedule
 with open("Roba sensibile/database.txt","r") as file:
     credenziali_database = file.read().splitlines()
 
-
-
-
 PORT = int(os.environ.get('PORT','8443'))
 
 CLASSE = 0
@@ -60,6 +57,7 @@ mycursor = None
 def database_connection():
 	global mydb
 	global mycursor
+
 	mydb = mysql.connector.connect(
 	  host=credenziali_database[0],
 	  user=credenziali_database[1],
@@ -164,12 +162,8 @@ def classe(update: Update, context: CallbackContext):
 
 def error(update: Update, context: CallbackContext):
     """Log Errors caused by Updates."""
-    if (context.error is requests.exceptions.ConnectionError):
-        logger.warn("Qualcosa è andato storto con la connessione, dormo 2 secondi")
-        sleep(2)
-    else:
-        logger.warning('Update "%s" caused error "%s"', update, context.error)
-        context.bot.send_message(ID_CANALE_LOG, text=f'{context.bot.name}\nUpdate "{update}" caused error "{context.error}')
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
+    context.bot.send_message(ID_CANALE_LOG, text=f'{context.bot.name}\nUpdate "{update}" caused error "{context.error}')
 
 def cancel(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")

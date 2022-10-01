@@ -2,4 +2,5 @@ mysql_connector_repackaged==0.3.1
 pandas==1.4.1
 requests==2.27.1
 schedule==1.1.0
+tabula==1.0.5
 telegram==0.0.1
