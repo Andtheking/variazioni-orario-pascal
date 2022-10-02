@@ -1,3 +1,4 @@
+from msilib import datasizemask
 from tabula import read_pdf, convert_into
 import requests, pandas as pd
 from bs4 import BeautifulSoup
@@ -42,7 +43,7 @@ def scaricaPdf(dataSelezionata: str) -> str:
             link = linkPdf
 
     if (link == ""):
-        return f"Non è stata pubblicata una varazione orario alla data selezionata"
+        return f"Non è stata pubblicata una varazione orario al {dataSelezionata}"
 
     response = requests.get(link)
     
@@ -82,14 +83,15 @@ def ruotaPdf(percorsoPdf: str):
 def leggiPdf(giorno: str) -> list[DocenteAssente] | str:
     # Giorno per esempio è "1-10" → 1 Ottobre
     
+    if os.path.exists(f"{giorno}.csv"):
+        os.remove(f"{giorno}.csv")
 
-    if not os.path.exists(f"pdfScaricati/{giorno}.csv"):
-        percorsoPdf = scaricaPdf(giorno)
-        
-        if ("pdfScaricati/" in percorsoPdf):
-            formattazionePdf(percorsoPdf,giorno)
-        else:
-            return percorsoPdf
+    percorsoPdf = scaricaPdf(giorno)
+    
+    if ("pdfScaricati/" in percorsoPdf):
+        formattazionePdf(percorsoPdf,giorno)
+    else:
+        return percorsoPdf
     
     docentiAssenti: list[DocenteAssente] = []
     asd = pd.read_csv(f"pdfScaricati/{giorno}.csv")
@@ -133,6 +135,7 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     return CercaClasse(classeDaCercare, docentiAssenti, giorno)
 
 
+# Da risolvere il problema col mese
 if __name__ == "__main__":
     print("Scrivi la classe e il giorno")
     Main(input(), input())

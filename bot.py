@@ -5,6 +5,7 @@ ID_CANALE_LOG = '-1001741378490'
 with open("Roba sensibile/token.txt","r") as file:
     TOKEN = file.read().splitlines()[0]
 
+from multiprocessing import context
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -26,7 +27,7 @@ from time import sleep
 import mysql.connector
 
 
-import os, requests, logging, schedule
+import os, requests, logging, schedule, re
 
 # 0 = Host
 # 1 = User
@@ -184,36 +185,34 @@ def mandaMessaggio():
             for utente in idInTabella:
                 id = utente[0]
                 requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
+                
     
 def variazioni(update: Update, context: CallbackContext):
-    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    dati = str(update.message.text).replace('/variazioni ', '')
+
+    robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
+
+    logger.info(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
+    dati = robaAntiCrashPerEdit.text.replace('/variazioni ', '')
+
+    datiList = dati.strip().split(" ")
+
+    classe = datiList[0].upper().strip()
+    giorno = datiList[1].strip() if len(datiList) > 1 else ""
     
-    if (dati == "/variazioni"):
-        update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
-        return
-        
-    datiList = dati.split(" ")
-
-    if len(datiList) != 2 and len(datiList) != 1:
-        return update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
-
-    messaggio = datiList[0]
-    giorno = datiList[1] if len(datiList) > 1 else ""
-
-    id = update.message.from_user.id
+    id = robaAntiCrashPerEdit.from_user.id
+    
     try:
-        if (int(messaggio[0:1]) > 0 and int(messaggio[0:1]) < 6) and (len(messaggio) == 2 and (len(giorno)==5) or (len(giorno)==4) or len(giorno) == 0): 
+        if (bool(re.match("\\b((0[1-9]|[1-9])|[12][0-9]|3[01])\\b-\\b((0[1-9]|[1-9])|1[0-2])\\b",giorno)) or giorno=="") and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
             if giorno != "":
-                context.bot.send_message(chat_id=id, text=f"{Main(messaggio,giorno)}", parse_mode='Markdown')
+                context.bot.send_message(chat_id=id, text=f"{Main(classe,giorno)}", parse_mode='Markdown')
             else:
-                context.bot.send_message(chat_id=id, text=f"{Main(messaggio)}", parse_mode='Markdown')
+                context.bot.send_message(chat_id=id, text=f"{Main(classe)}", parse_mode='Markdown')
         else:
-            update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+            robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
     except Exception as e:
-        # update.message.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
+        # robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
         context.bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
-        update.message.reply_text("Qualcosa è andato storto, whoops. Nel dubbio riprova")
+        robaAntiCrashPerEdit.reply_text("Qualcosa è andato storto, whoops. Nel dubbio riprova")
 
 def discord(update: Update, context: CallbackContext):
     update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
