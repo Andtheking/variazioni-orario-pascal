@@ -16,7 +16,7 @@ class DocenteAssente:
         self.note = note # "La classe entra alla 2° ora"
 
 url = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
-
+link: str
 def scaricaPdf(dataSelezionata: str) -> str: 
     """
     Scarica il pdf dal sito del Pascal
@@ -31,19 +31,24 @@ def scaricaPdf(dataSelezionata: str) -> str:
     # L'if si può estendere con degli elif per aggiungere più separatori
     if ('-' in dataSelezionata):
         data = dataSelezionata.split('-')
+    elif ('/' in dataSelezionata):
+        data = dataSelezionata.split('/')
+
 
     
     soup = BeautifulSoup(requests.get(url).content, "html.parser").find_all("a")
 
     listaPdf: list[str] = [a['href'] for a in soup if "pdf" in a['href']]
 
+    global link
     link = ""
     for linkPdf in listaPdf:
-        if f"-{data[0]}-" in linkPdf.lower():
+        print(f"-{data[0]}- in {linkPdf.lower()} and {convertiMese(data[1]).lower()} in {linkPdf.lower()}")
+        if (f"-{data[0]}-" in linkPdf.lower() or f"-{data[0][1:]}-" in linkPdf.lower()) and f"{convertiMese(data[1]).lower()}" in linkPdf.lower():
             link = linkPdf
 
     if (link == ""):
-        return f"Non è stata pubblicata una varazione orario al {dataSelezionata}"
+        return f"Non è stata pubblicata una varazione orario per il `{dataSelezionata}`"
 
     response = requests.get(link)
     
@@ -52,27 +57,29 @@ def scaricaPdf(dataSelezionata: str) -> str:
     
     return f'pdfScaricati/{link[link.rindex("/")+1:]}'
 
-def formattazionePdf(percorsoPdf: str, nomeOutput: str):
+def formattazionePdf(percorsoPdf: str, nomeOutput: str, gradi: int, lattice):
 
-    ruotaPdf(percorsoPdf)
-    os.remove(percorsoPdf)
+    ruotaPdf(percorsoPdf, gradi)
     
     percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + "r" + percorsoPdf[percorsoPdf.rindex("/")+1:]
     
-    convert_into(percorsoPdf, f"pdfScaricati/{nomeOutput}.csv" , pages="all", lattice=True)
+    convert_into(percorsoPdf, f"pdfScaricati/{nomeOutput}.csv" , pages="all", lattice=lattice)
     os.remove(percorsoPdf)
     
+def convertiMese(n: str):
+    mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
+    return mesi[int(n)-1].capitalize()
 
 # Rigorosamente copia-incollato da internet
 # Sauce: https://www.johndcook.com/blog/2015/05/01/rotating-pdf-pages-with-python/
-def ruotaPdf(percorsoPdf: str):
+def ruotaPdf(percorsoPdf: str, gradi: int):
     pdf_in = open(percorsoPdf, 'rb')
     pdf_reader = PyPDF2.PdfFileReader(pdf_in)
     pdf_writer = PyPDF2.PdfFileWriter()
 
     for pagenum in range(pdf_reader.numPages):
         page = pdf_reader.getPage(pagenum)
-        page.rotateClockwise(90)
+        page.rotateClockwise(gradi)
         pdf_writer.addPage(page)
 
     pdf_out = open(percorsoPdf[0:percorsoPdf.rindex("/")+1] + "r" + percorsoPdf[percorsoPdf.rindex("/")+1:], 'wb')
@@ -80,55 +87,72 @@ def ruotaPdf(percorsoPdf: str):
     pdf_out.close()
     pdf_in.close()
     
-def leggiPdf(giorno: str) -> list[DocenteAssente] | str:
-    # Giorno per esempio è "1-10" → 1 Ottobre
-    
-    if os.path.exists(f"{giorno}.csv"):
-        os.remove(f"{giorno}.csv")
+
+
+def leggiPdf(giorno: str, volta: int) -> list[DocenteAssente] | str:
+    if os.path.exists(f"pdfScaricati/{giorno}.csv"):
+        os.remove(f"pdfScaricati/{giorno}.csv")
 
     percorsoPdf = scaricaPdf(giorno)
-    
-    if ("pdfScaricati/" in percorsoPdf):
-        formattazionePdf(percorsoPdf,giorno)
-    else:
-        return percorsoPdf
-    
+    if (volta == 1):
+        if ("pdfScaricati/" in percorsoPdf):
+            formattazionePdf(percorsoPdf,giorno,90,True)
+        else:
+            return percorsoPdf
+    elif (volta == 2):
+        if ("pdfScaricati/" in percorsoPdf):
+            formattazionePdf(percorsoPdf,giorno,-90,False)
+        else:
+            return percorsoPdf
+
+
     docentiAssenti: list[DocenteAssente] = []
     asd = pd.read_csv(f"pdfScaricati/{giorno}.csv")
     daRimuovere = asd.columns[0]
 
-    for riga in asd.values:
-        riga: str
-        if (riga[0] == daRimuovere):
-            continue
-        #   0      1           2               3           4   5         6         7   8
-        # ['2' '3I\r(69)' 'Spirito F.' 'Collaboratore 1.' '-' 'NO' 'Sorveglianza' nan nan]
-        docentiAssenti.append(DocenteAssente(int(riga[0]),riga[1].replace("\r",""),riga[2],riga[3] + " | " + riga[4],riga[6]))
-    
-    return docentiAssenti
+    try:
+        for riga in asd.values:
+            riga: str
+            if (riga[0] == daRimuovere):
+                continue
+            #   0      1           2               3           4   5         6         7   8
+            # ['2' '3I\r(69)' 'Spirito F.' 'Collaboratore 1.' '-' 'NO' 'Sorveglianza' nan nan]
+            docentiAssenti.append(DocenteAssente(int(riga[0]),riga[1].replace("\r",""),riga[2],riga[3] + " | " + riga[4],riga[6]))
+        
+        return docentiAssenti
+    except Exception as e:
+        return f"C'è stato un problema col pdf, ti mando il link diretto al download\n\n{link}"
 
 def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente], giorno: str):
     stringa = ""
     
     i = 0
-    while i < len(docentiAssenti):
-        if i < len(docentiAssenti)-1 and docentiAssenti[i].profAssente == docentiAssenti[i+1].profAssente and docentiAssenti[i].sostituti == docentiAssenti[i+1].sostituti:
-            stringa += f"Ora: `{docentiAssenti[i].ora}` e `{docentiAssenti[i+1].ora}`\nClasse(Aula): `{docentiAssenti[i].classeAula}`\nDocente assente: `{docentiAssenti[i].profAssente}`\nSostituito da: `{docentiAssenti[i].sostituti.replace(' | ', ' e ')}`\nNote: `{docentiAssenti[i].note}`\n\n" 
-            i += 2
-            continue
-        if classe in docentiAssenti[i].classeAula:
-            stringa += f"Ora: `{docentiAssenti[i].ora}`\nClasse(Aula): `{docentiAssenti[i].classeAula}`\nDocente assente: `{docentiAssenti[i].profAssente}`\nSostituito da: `{docentiAssenti[i].sostituti.replace(' | ', ' e ')}`\nNote: `{docentiAssenti[i].note}`\n\n" 
-        i += 1
+    try:
+        while i < len(docentiAssenti):
+            if i < len(docentiAssenti)-1 and docentiAssenti[i].profAssente == docentiAssenti[i+1].profAssente and docentiAssenti[i].sostituti == docentiAssenti[i+1].sostituti:
+                stringa += f"Ora: `{docentiAssenti[i].ora}` e `{docentiAssenti[i+1].ora}`\nClasse(Aula): `{docentiAssenti[i].classeAula}`\nDocente assente: `{docentiAssenti[i].profAssente}`\nSostituito da: `{docentiAssenti[i].sostituti.replace(' | ', ' e ')}`\nNote: `{docentiAssenti[i].note}`\n\n" 
+                i += 2
+                continue
+            if classe in docentiAssenti[i].classeAula:
+                stringa += f"Ora: `{docentiAssenti[i].ora}`\nClasse(Aula): `{docentiAssenti[i].classeAula}`\nDocente assente: `{docentiAssenti[i].profAssente}`\nSostituito da: `{docentiAssenti[i].sostituti.replace(' | ', ' e ')}`\nNote: `{docentiAssenti[i].note}`\n\n" 
+            i += 1
 
-    if stringa == "":
-        stringa = f"Nessuna variazione orario per la {classe} il {giorno}"
-
-    return stringa
+        if stringa == "":
+            return f"Nessuna variazione orario per la `{classe}` il `{giorno}`"
+        else:
+            return f"Variazioni orario per il `{giorno}`\n\n{stringa}"
+    except Exception as e:
+        print(str(e))
+        return f"C'è stato un problema col pdf, ti mando il link diretto al download\n\n{link}"
     
 def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m")):
 
-    docentiAssenti = leggiPdf('0' + giorno if not len(giorno.split('-')[0]) == 2 else giorno)
+    if giorno == "domani":
+        giorno = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m")
     
+    docentiAssenti = leggiPdf('0' + giorno if not len(giorno.split('-')[0]) == 2 else giorno,1)
+    
+
     if type(docentiAssenti) == type(""):
         return docentiAssenti
     
@@ -138,9 +162,4 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
 # Da risolvere il problema col mese
 if __name__ == "__main__":
     print("Scrivi la classe e il giorno")
-    Main(input(), input())
-
-
-
-   
-    
+    print(Main(input(), input()))

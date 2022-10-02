@@ -202,7 +202,7 @@ def variazioni(update: Update, context: CallbackContext):
     id = robaAntiCrashPerEdit.from_user.id
     
     try:
-        if (bool(re.match("\\b((0[1-9]|[1-9])|[12][0-9]|3[01])\\b-\\b((0[1-9]|[1-9])|1[0-2])\\b",giorno)) or giorno=="") and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
+        if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno=="" or giorno=="domani") and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
             if giorno != "":
                 context.bot.send_message(chat_id=id, text=f"{Main(classe,giorno)}", parse_mode='Markdown')
             else:
