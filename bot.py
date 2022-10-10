@@ -21,7 +21,7 @@ from telegram import (
     User,
 )
 
-from pdf import Main
+from pdf import CancellaCartellaPdf, Main
 from threading import Thread
 from time import sleep
 import mysql.connector
@@ -186,7 +186,18 @@ def mandaMessaggio():
                 id = utente[0]
                 requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
                 
-    
+
+
+def getLink(update: Update, context: CallbackContext):
+    robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
+
+    dati = robaAntiCrashPerEdit.text.replace('/linkPdf ', '')
+
+    datiList = dati.strip().split(" ")
+
+    robaAntiCrashPerEdit.reply_text(Main(datiList[0].upper().strip(),giorno = datiList[1].strip() if len(datiList) > 1 else "",onlyLink=True))
+
+
 def variazioni(update: Update, context: CallbackContext):
 
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
@@ -195,18 +206,22 @@ def variazioni(update: Update, context: CallbackContext):
     dati = robaAntiCrashPerEdit.text.replace('/variazioni ', '')
 
     datiList = dati.strip().split(" ")
+    
+    if len(datiList) != 2 and len(datiList) != 1:
+        robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+        return
 
     classe = datiList[0].upper().strip()
+    if len(classe) != 2:
+        robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+        return
     giorno = datiList[1].strip() if len(datiList) > 1 else ""
     
     id = robaAntiCrashPerEdit.from_user.id
-    
+    aliasGiorni = ["","domani","oggi"]
     try:
-        if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno=="" or giorno=="domani") and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
-            if giorno != "":
-                context.bot.send_message(chat_id=id, text=f"{Main(classe,giorno)}", parse_mode='Markdown')
-            else:
-                context.bot.send_message(chat_id=id, text=f"{Main(classe)}", parse_mode='Markdown')
+        if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno in aliasGiorni) and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
+            context.bot.send_message(chat_id=id, text=f"{Main(classe,giorno)}", parse_mode='Markdown')
         else:
             robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
     except Exception as e:
@@ -255,11 +270,12 @@ def main():
 
     #dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
 
-    dp.add_handler(CommandHandler('variazioni', variazioni)) # Visualizza variazioni di un'altra classe del giorno
+    dp.add_handler(CommandHandler('variazioni', variazioni, run_async=True)) # Visualizza variazioni di un'altra classe del giorno
 
     dp.add_handler(CommandHandler('discord', discord)) # Discord del pascal
 
     dp.add_handler(CommandHandler('broadcast', broadcast))
+    dp.add_handler(CommandHandler('linkPdf', getLink))
 
     #dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
@@ -278,8 +294,7 @@ def main():
     schedule.every().friday.at(ORARIO).do(mandaMessaggio)
     schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
     
-    
-    
+    schedule.every().day.at("00:00").do(CancellaCartellaPdf)
 
     Thread(target=schedule_checker).start()
 
