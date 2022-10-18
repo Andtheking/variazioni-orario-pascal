@@ -18,7 +18,7 @@ from telegram import Message, Update, User
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           Filters, MessageHandler, Updater)
 
-from pdf import CancellaCartellaPdf, Main
+from variazioni import CancellaCartellaPdf, Main
 
 # 0 = Host
 # 1 = User
