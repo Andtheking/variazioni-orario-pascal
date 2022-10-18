@@ -5,29 +5,20 @@ ID_CANALE_LOG = '-1001741378490'
 with open("Roba sensibile/token.txt","r") as file:
     TOKEN = file.read().splitlines()[0]
 
-from multiprocessing import context
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    ConversationHandler,
-    CallbackContext,
-)
-
-from telegram import (
-    Update,
-    Message,
-    User,
-)
-
-from pdf import CancellaCartellaPdf, Main
+import logging
+import os
+import re
 from threading import Thread
 from time import sleep
+
 import mysql.connector
+import requests
+import schedule
+from telegram import Message, Update, User
+from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
+                          Filters, MessageHandler, Updater)
 
-
-import os, requests, logging, schedule, re
+from pdf import CancellaCartellaPdf, Main
 
 # 0 = Host
 # 1 = User

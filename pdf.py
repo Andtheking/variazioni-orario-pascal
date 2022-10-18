@@ -1,11 +1,13 @@
-from tabula import convert_into
-import requests, pandas as pd
-from bs4 import BeautifulSoup
-import PyPDF2
-import os
 import datetime
 import math
+import os
 import threading
+
+import pandas as pd
+import PyPDF2
+import requests
+from bs4 import BeautifulSoup
+from tabula import convert_into
 
 
 class DocenteAssente:
@@ -19,9 +21,9 @@ class DocenteAssente:
 url = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
 link: str
 semaforo = threading.Semaphore()
+pdf: dict[datetime.datetime] = {}
 
-ultimaVoltaScaricato = 0
-tentativoDownload = 9999
+
 
 def scaricaPdf(dataSelezionata: str, onlyLink: bool = False) -> str: 
     """
@@ -53,7 +55,6 @@ def scaricaPdf(dataSelezionata: str, onlyLink: bool = False) -> str:
     if (onlyLink):
         return link
 
-    # Se l'ultima volta che è stato scaricato risale a più di 10 minuti fa non scaricarlo di nuovo
     response = requests.get(link)
     with open(f'pdfScaricati/{link[link.rindex("/")+1:]}', 'wb') as f:
         f.write(response.content)
@@ -61,10 +62,10 @@ def scaricaPdf(dataSelezionata: str, onlyLink: bool = False) -> str:
     return f'pdfScaricati/{link[link.rindex("/")+1:]}'
 
 
-def formattazionePdf(percorsoPdf: str, nomeOutput: str, gradi: int, lattice):
+def formattazionePdf(percorsoPdf: str, nomeOutput: str, gradi: int, lattice:bool):
     ruotaPdf(percorsoPdf, gradi)
     
-    percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + "r" + percorsoPdf[percorsoPdf.rindex("/")+1:]
+    percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + f"{gradi}" + percorsoPdf[percorsoPdf.rindex("/")+1:]
     
     semaforo.acquire()
     convert_into(percorsoPdf, f"pdfScaricati/{nomeOutput}.csv" , pages="all", lattice=lattice)
@@ -101,8 +102,22 @@ def clean_up(csv_file: str):
 
 # Rigorosamente copia-incollato da internet
 # Sauce: https://www.johndcook.com/blog/2015/05/01/rotating-pdf-pages-with-python/
+
 def ruotaPdf(percorsoPdf: str, gradi: int):
+    # Questa funzione ci mette 2 secondi buoni a chiamata
+    # devo limitare questa quindi
+    
     semaforo.acquire()
+
+    percorsoPdfRuotato = percorsoPdf[0:percorsoPdf.rindex("/")+1] + f"{gradi}" + percorsoPdf[percorsoPdf.rindex("/")+1:]
+    
+    if ((percorsoPdfRuotato in list(pdf.keys())) and (not datetime.datetime.now() > pdf[percorsoPdfRuotato] + datetime.timedelta(minutes=10))):
+        semaforo.release()
+        return percorsoPdfRuotato
+
+    if percorsoPdfRuotato in list(pdf.keys()):
+        pdf.pop(percorsoPdfRuotato)
+
 
     pdf_in = open(percorsoPdf, 'rb')
     pdf_reader = PyPDF2.PdfFileReader(pdf_in)
@@ -113,40 +128,45 @@ def ruotaPdf(percorsoPdf: str, gradi: int):
         page.rotateClockwise(gradi)
         pdf_writer.addPage(page)
 
-    pdf_out = open(percorsoPdf[0:percorsoPdf.rindex("/")+1] + "r" + percorsoPdf[percorsoPdf.rindex("/")+1:], 'wb')
+    pdf_out = open(percorsoPdfRuotato, 'wb')
     pdf_writer.write(pdf_out)
     pdf_out.close()
     pdf_in.close()
     
+    pdf[percorsoPdfRuotato] = datetime.datetime.now()
     semaforo.release()
     
 
 
 def leggiPdf(giorno: str, volta: int) -> list[DocenteAssente] | str:
 
-    # try:
-    #     percorsoPdf = scaricaPdf(giorno)
-    # except Exception as e:
-    #     return str(e)
-    #percorsoPdf = "pdfScaricati/Variazioni-orario-MERCOLEDI-5-OTTOBRE-2022-1.pdf"
-    percorsoPdf = "pdfScaricati/Variazioni-orario-MARTEDI-4-OTTOBRE-2022-3.pdf"
-
+    # TODO Spostare sta merda fuori da questo metodo
+    
+    try:
+        percorsoPdf = scaricaPdf(giorno)
+    except Exception as e:
+        return str(e)
 
     if (volta == 1):
         formattazionePdf(percorsoPdf,giorno,90,True)
     elif (volta == 2):
         formattazionePdf(percorsoPdf,giorno,-90,False)
 
+    # spostare fino a qua
+
 
     docentiAssenti: list[DocenteAssente] = []
+    
     semaforo.acquire()
     asd = pd.read_csv(clean_up(f"pdfScaricati/{giorno}.csv"))
     semaforo.release()
+    
     daRimuovere = asd.columns[0]
 
     try:
         if volta == 1:
             for riga in asd.values:
+                print('a')
                 riga: str
                 if (riga[0] == daRimuovere):
                     continue
@@ -155,11 +175,10 @@ def leggiPdf(giorno: str, volta: int) -> list[DocenteAssente] | str:
                 docentiAssenti.append(DocenteAssente(int(riga[0]),riga[1].replace("\r",""),riga[2],riga[3] + " | " + riga[4],riga[6]))  
         elif volta == 2:
             i = 0
-            daTogliere = 0
             while i < len(asd.values):
+                print('b')
                 if (i+1 < len(asd.values) and math.isnan(asd.values[i+1][1])):
                     i+=1
-                    daTogliere = 1
                     continue
                 if (i+1 < len(asd.values)):
                     ora = int(asd.values[i+1][1])   
@@ -231,5 +250,5 @@ def CancellaCartellaPdf():
 
 # Da risolvere il problema col mese
 if __name__ == "__main__":
-    print(Main("4E","4-10"))
+    print(Main("4E","oggi"))
     #print(Main("1E"))
