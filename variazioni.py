@@ -3,6 +3,7 @@ import math
 import os
 import threading
 
+import bs4
 import pandas as pd
 import PyPDF2
 import requests
@@ -148,7 +149,6 @@ def ruotaPdf(percorsoPdf: str, gradi: int):
 def pdfFormato2(docentiAssenti: list[DocenteAssente], asd: pd.DataFrame):
     i = 0
     while i < len(asd.values):
-        print('b')
         if (i+1 < len(asd.values) and math.isnan(asd.values[i+1][1])):
             i+=1
             continue
@@ -168,7 +168,6 @@ def pdfFormato2(docentiAssenti: list[DocenteAssente], asd: pd.DataFrame):
 
 def pdfFormato1(docentiAssenti: list[DocenteAssente], asd: pd.DataFrame, daRimuovere):
     for riga in asd.values:
-        print('a')
         riga: str
 
         if (riga[0] == daRimuovere):
@@ -222,10 +221,6 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     if (onlyLink):
         return ottieniLinkPdf(giorno)
 
-    try:
-        percorsoPdf = scaricaPdf(ottieniLinkPdf(giorno))
-    except Exception as e:
-        return str(e)
     
      # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
     global csv
@@ -235,6 +230,10 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
         condizione3 = datetime.datetime.now() > csv[f"{giorno}.csv"].data + datetime.timedelta(minutes=10)
 
     if not condizione2 or condizione3:
+        try:
+            percorsoPdf = scaricaPdf(ottieniLinkPdf(giorno))
+        except Exception as e:
+            return str(e)
         try:
             pdf_Csv = pdfToCsv(percorsoPdf,giorno,90,True)
             docentiAssenti = leggiCsv(pdf_Csv,giorno,1)
@@ -254,6 +253,39 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     
     return CercaClasse(classeDaCercare, docentiAssenti, giorno)
 
+
+def controllaVariazioniAule(classe: str,giorno: str):
+    soup = BeautifulSoup(requests.get(URL).content, "html.parser")
+
+    giorno = formattaGiorno(giorno)
+    giorno = giorno.split('-')
+    daCercare = f"{giorno[0]} {convertiMese(giorno[1]).lower()}"
+
+    lista: list[bs4.Tag]= soup.find("div", attrs={"class":"entry-content"}).findAll()
+    trovato: int = None
+    listaVariazioniAuleGiorno = []
+
+    for i in range(len(lista)):
+        i: bs4.Tag
+        if lista[i].name == 'span':
+            if (daCercare in lista[i].text):
+                trovato = i
+            
+            elif (trovato != None):
+                while  trovato < i-1:
+                    if (lista[trovato].name == 'p'):
+                        listaVariazioniAuleGiorno.append(lista[trovato].text)
+                    trovato += 1
+                trovato = None
+
+    daReturnare: str = ''
+    for i in listaVariazioniAuleGiorno:
+        if classe in i:
+            daReturnare+=i+"\n"
+
+    return daReturnare
+
+
 def formattaGiorno(giorno):
     
     if giorno == "domani" or giorno == "":
@@ -271,5 +303,13 @@ def CancellaCartellaPdf():
     for f in filelist:
         os.remove(os.path.join(filelist, f))
 
+
+import time
+
 if __name__ == "__main__":
-    print(Main("4E","oggi"))
+    start_time = time.time()
+    for i in range(50):
+        print(Main("4I"))
+    end_time = time.time()
+    print(f"Ci ho messo {end_time-start_time}")
+    

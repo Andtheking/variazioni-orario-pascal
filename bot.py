@@ -70,7 +70,7 @@ def help(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Imposta la tua classe con /impostaClasse: dopo averla impostata, la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno;\nVisualizza la tua classe con /classe;\nUsa /variazioni <CLASSE> per avere le variazioni orario di una qualsiasi classe.\n\nAttenzione: con /variazioni hai le variazioni DEL GIORNO ATTUALE, quindi prima di 00:00 è un po' useless.") 
 
-def start(update,context):
+def start(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Versione praticamente quasi finita. Fai /help.")
 
@@ -164,18 +164,22 @@ def cancel(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 MANDO = True
-def mandaMessaggio():
+def mandaMessaggio(giornoPrima: bool):
     if MANDO:
-        database_connection()
-        logger.info(f"Variazioni orario mandate agli utenti.")
-        mycursor.execute(f'SELECT id, username, classe FROM utenti')
+        # database_connection()
+        # logger.info(f"Variazioni orario mandate agli utenti.")
+        # mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
-        idInTabella = mycursor.fetchall()
-        database_disconnection()
-        if len(idInTabella) != 0:    
-            for utente in idInTabella:
-                id = utente[0]
-                requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main(utente[2])}')
+        # idInTabella = mycursor.fetchall()
+        # database_disconnection()
+        # if len(idInTabella) != 0:    
+        #     for utente in idInTabella:
+                # id = utente[0]
+                for i in range(10):
+                    id = 1005129545 
+                    requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main("4I","domani" if giornoPrima else "oggi")}&parse_mode=Markdown')
+                    id = ID_TELEGRAM_AND
+                    requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main("4I","domani" if giornoPrima else "oggi")}&parse_mode=Markdown')
                 
 
 
@@ -188,6 +192,7 @@ def getLink(update: Update, context: CallbackContext):
 
     robaAntiCrashPerEdit.reply_text(Main(datiList[0].upper().strip(),giorno = datiList[1].strip() if len(datiList) > 1 else "",onlyLink=True))
 
+ALIAS_GIORNI = ["","domani","oggi"]
 
 def variazioni(update: Update, context: CallbackContext):
 
@@ -209,9 +214,9 @@ def variazioni(update: Update, context: CallbackContext):
     giorno = datiList[1].strip() if len(datiList) > 1 else ""
     
     id = robaAntiCrashPerEdit.from_user.id
-    aliasGiorni = ["","domani","oggi"]
+    
     try:
-        if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno in aliasGiorni) and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
+        if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno in ALIAS_GIORNI) and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
             context.bot.send_message(chat_id=id, text=f"{Main(classe,giorno)}", parse_mode='Markdown')
         else:
             robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
@@ -277,14 +282,22 @@ def main():
 
     #schedule.every().day.at("00:05").do(GetUrl)
     
-    ORARIO = "06:30"
-    schedule.every().monday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().tuesday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().wednesday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().thursday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().friday.at(ORARIO).do(mandaMessaggio)
-    schedule.every().saturday.at(ORARIO).do(mandaMessaggio)
+    ORARIO_MATTINA = "06:30"
+    schedule.every().monday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
+    schedule.every().tuesday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
+    schedule.every().wednesday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
+    schedule.every().thursday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
+    schedule.every().friday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
+    schedule.every().saturday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
     
+    ORARIO_SERA = "23:06"
+    schedule.every().monday.at(ORARIO_SERA).do(mandaMessaggio,True)
+    schedule.every().tuesday.at(ORARIO_SERA).do(mandaMessaggio,True)
+    schedule.every().wednesday.at(ORARIO_SERA).do(mandaMessaggio,True)
+    schedule.every().thursday.at(ORARIO_SERA).do(mandaMessaggio,True)
+    schedule.every().friday.at(ORARIO_SERA).do(mandaMessaggio,True)
+    schedule.every().saturday.at(ORARIO_SERA).do(mandaMessaggio,True)
+
     schedule.every().day.at("00:00").do(CancellaCartellaPdf)
 
     Thread(target=schedule_checker).start()
