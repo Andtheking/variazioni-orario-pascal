@@ -14,11 +14,11 @@ from time import sleep
 import mysql.connector
 import requests
 import schedule
-from telegram import Message, Update, User
+from telegram import Bot, Message, Update, User
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           Filters, MessageHandler, Updater)
 
-from variazioni import CancellaCartellaPdf, Main
+from variazioni import CancellaCartellaPdf, Main, controllaVariazioniAule
 
 # 0 = Host
 # 1 = User
@@ -164,22 +164,20 @@ def cancel(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 MANDO = True
-def mandaMessaggio(giornoPrima: bool):
+def mandaMessaggio(giornoPrima: bool, bot: Bot):
     if MANDO:
-        # database_connection()
-        # logger.info(f"Variazioni orario mandate agli utenti.")
-        # mycursor.execute(f'SELECT id, username, classe FROM utenti')
+        database_connection()
+        logger.info(f"Variazioni orario mandate agli utenti.")
+        mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
-        # idInTabella = mycursor.fetchall()
-        # database_disconnection()
-        # if len(idInTabella) != 0:    
-        #     for utente in idInTabella:
-                # id = utente[0]
-                for i in range(10):
-                    id = 1005129545 
-                    requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main("4I","domani" if giornoPrima else "oggi")}&parse_mode=Markdown')
-                    id = ID_TELEGRAM_AND
-                    requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={Main("4I","domani" if giornoPrima else "oggi")}&parse_mode=Markdown')
+        idInTabella = mycursor.fetchall()
+        database_disconnection()
+        idInTabella = [['269475423','Looka','4I'],['245996916','And','4G'],['1005129545','Sabri','4I']]
+
+        if len(idInTabella) != 0:    
+            for utente in idInTabella:
+                id = utente[0]
+                MandaVariazioni(bot=bot, classe=utente[2], giorno="domani" if giornoPrima else "oggi",chatId=id)
                 
 
 
@@ -215,15 +213,24 @@ def variazioni(update: Update, context: CallbackContext):
     
     id = robaAntiCrashPerEdit.from_user.id
     
+    if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno in ALIAS_GIORNI) and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
+        MandaVariazioni(context.bot, classe, giorno, id)
+    else:
+        robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+
+
+def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
     try:
-        if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno in ALIAS_GIORNI) and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
-            context.bot.send_message(chat_id=id, text=f"{Main(classe,giorno)}", parse_mode='Markdown')
-        else:
-            robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+        variazioniOrario = f"{Main(classe,giorno)}"
+        variazioniAule = f"{controllaVariazioniAule(classe,giorno)}"
+
+        bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
+        if variazioniAule != '':
+            bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
     except Exception as e:
         # robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
-        context.bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
-        robaAntiCrashPerEdit.reply_text("Qualcosa è andato storto, whoops. Nel dubbio riprova")
+        bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
+        bot.send_message(chat_id=chatId,text="Qualcosa è andato storto, whoops. Nel dubbio riprova")
 
 def discord(update: Update, context: CallbackContext):
     update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
@@ -283,20 +290,20 @@ def main():
     #schedule.every().day.at("00:05").do(GetUrl)
     
     ORARIO_MATTINA = "06:30"
-    schedule.every().monday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
-    schedule.every().tuesday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
-    schedule.every().wednesday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
-    schedule.every().thursday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
-    schedule.every().friday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
-    schedule.every().saturday.at(ORARIO_MATTINA).do(mandaMessaggio,False)
+    schedule.every().monday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
+    schedule.every().tuesday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
+    schedule.every().wednesday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
+    schedule.every().thursday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
+    schedule.every().friday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
+    schedule.every().saturday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
     
-    ORARIO_SERA = "23:06"
-    schedule.every().monday.at(ORARIO_SERA).do(mandaMessaggio,True)
-    schedule.every().tuesday.at(ORARIO_SERA).do(mandaMessaggio,True)
-    schedule.every().wednesday.at(ORARIO_SERA).do(mandaMessaggio,True)
-    schedule.every().thursday.at(ORARIO_SERA).do(mandaMessaggio,True)
-    schedule.every().friday.at(ORARIO_SERA).do(mandaMessaggio,True)
-    schedule.every().saturday.at(ORARIO_SERA).do(mandaMessaggio,True)
+    ORARIO_SERA = "17:54"
+    schedule.every().monday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
+    schedule.every().tuesday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
+    schedule.every().wednesday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
+    schedule.every().thursday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
+    schedule.every().friday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
+    schedule.every().saturday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
 
     schedule.every().day.at("00:00").do(CancellaCartellaPdf)
 
@@ -306,5 +313,6 @@ def main():
     updater.start_polling(timeout=200)
     updater.idle()
 
+    
 if __name__ == '__main__':
     main()

@@ -212,7 +212,7 @@ def leggiCsv(percorsoCsv:str,giorno: str, formato: int) -> list[DocenteAssente] 
     return docentiAssenti
 
 
-def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"),onlyLink=False):
+def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"),onlyLink=False) -> str:
     #TODO Quando due utenti fanno un comando allo stesso tempo, non si deve bloccare
 
 
@@ -230,6 +230,7 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
         condizione3 = datetime.datetime.now() > csv[f"{giorno}.csv"].data + datetime.timedelta(minutes=10)
 
     if not condizione2 or condizione3:
+        print("Scarico il pdf")
         try:
             percorsoPdf = scaricaPdf(ottieniLinkPdf(giorno))
         except Exception as e:
@@ -246,6 +247,7 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
             except:
                 return f"C'è stato un problema col pdf, ti mando il link diretto al download\n\n{ottieniLinkPdf(giorno)}"
     else:
+        print("Non scarico il pdf")
         docentiAssenti = leggiCsv(f"pdfScaricati/{giorno}.csv",giorno, csv[f"{giorno}.csv"].formato)
 
     if type(docentiAssenti) == type(""):
@@ -283,6 +285,9 @@ def controllaVariazioniAule(classe: str,giorno: str):
         if classe in i:
             daReturnare+=i+"\n"
 
+    if daReturnare != '':
+        daReturnare = f'Variazioni aule per il `{giorno[0] + "-" + giorno[1]}`\n'+daReturnare
+
     return daReturnare
 
 
@@ -304,12 +309,11 @@ def CancellaCartellaPdf():
         os.remove(os.path.join(filelist, f))
 
 
-import time
-
 if __name__ == "__main__":
-    start_time = time.time()
-    for i in range(50):
-        print(Main("4I"))
-    end_time = time.time()
-    print(f"Ci ho messo {end_time-start_time}")
+    #print(Main("4I"))
+    variazioniOrario = Main('4I','domani')
+    variazioniAule = controllaVariazioniAule('4I','domani')
+
+    print(variazioniOrario + variazioniAule)
+
     
