@@ -71,6 +71,7 @@ def scaricaPdf(link: str) -> str:
     return f'pdfScaricati/{link[link.rindex("/")+1:]}'
 
 def pdfToCsv(percorsoPdf: str, nomeOutput: str, gradi: int, lattice:bool) -> str:
+    print("Entrato in pdfToCsv")
     nomeCsv = f"{nomeOutput}.csv"
     percorsoCsv = f"pdfScaricati/{nomeCsv}"
 
@@ -82,13 +83,14 @@ def pdfToCsv(percorsoPdf: str, nomeOutput: str, gradi: int, lattice:bool) -> str
     #     csv.pop(nomeCsv)
 
     ruotaPdf(percorsoPdf, gradi)
-    
+    print("Ruotato")
     percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + f"{gradi}" + percorsoPdf[percorsoPdf.rindex("/")+1:]
-
+    
     semaforo.acquire()
     convert_into(percorsoPdf, percorsoCsv, pages="all", lattice=lattice)
     semaforo.release()
-    
+    print("Convertito")
+
     return percorsoCsv
     
 def convertiMese(n: str):
@@ -123,28 +125,32 @@ def clean_up(csv_file: str):
 # Rigorosamente copia-incollato da internet
 # Sauce: https://www.johndcook.com/blog/2015/05/01/rotating-pdf-pages-with-python/
 def ruotaPdf(percorsoPdf: str, gradi: int):
-
+    print("Entrato in ruotaPdf")
     semaforo.acquire() # Semaforo perché non si può ruotare 2 volte lo stesso pdf contemporaneamente :P 
+    print("Semaforo ottenuto")
+    try:
 
-    percorsoPdfRuotato = percorsoPdf[0:percorsoPdf.rindex("/")+1] + f"{gradi}" + percorsoPdf[percorsoPdf.rindex("/")+1:]
+        percorsoPdfRuotato = percorsoPdf[0:percorsoPdf.rindex("/")+1] + f"{gradi}" + percorsoPdf[percorsoPdf.rindex("/")+1:]
 
-    pdf_in = open(percorsoPdf, 'rb')
-    pdf_reader = PyPDF2.PdfFileReader(pdf_in)
-    pdf_writer = PyPDF2.PdfFileWriter()
+        pdf_in = open(percorsoPdf, 'rb')
+        pdf_reader = PyPDF2.PdfFileReader(pdf_in)
+        pdf_writer = PyPDF2.PdfFileWriter()
 
-    for pagenum in range(pdf_reader.numPages):
-        page = pdf_reader.getPage(pagenum)
-        page.rotateClockwise(gradi)
-        pdf_writer.addPage(page)
+        for pagenum in range(pdf_reader.numPages):
+            page = pdf_reader.getPage(pagenum)
+            page.rotateClockwise(gradi)
+            pdf_writer.addPage(page)
 
-    pdf_out = open(percorsoPdfRuotato, 'wb')
-    pdf_writer.write(pdf_out)
-    pdf_out.close()
-    pdf_in.close()
+        pdf_out = open(percorsoPdfRuotato, 'wb')
+        pdf_writer.write(pdf_out)
+        pdf_out.close()
+        pdf_in.close()
     
-    # pdf[percorsoPdfRuotato] = datetime.datetime.now()
-    
+	# pdf[percorsoPdfRuotato] = datetime.datetime.now()
+    except Exception as ex:
+            print(str(ex))
     semaforo.release()
+    print("Semaforo lasciato")
 
 def pdfFormato2(docentiAssenti: list[DocenteAssente], asd: pd.DataFrame):
     i = 0
@@ -199,7 +205,12 @@ def leggiCsv(percorsoCsv:str,giorno: str, formato: int) -> list[DocenteAssente] 
     docentiAssenti: list[DocenteAssente] = []
     
     semaforo.acquire()
-    asd = pd.read_csv(clean_up(percorsoCsv))
+    try:
+        asd = pd.read_csv(clean_up(percorsoCsv))
+    except:
+        semaforo.release()
+        raise Exception()
+
     semaforo.release()
 
     if formato==1:
@@ -233,16 +244,22 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
         print("Scarico il pdf")
         try:
             percorsoPdf = scaricaPdf(ottieniLinkPdf(giorno))
+            print("Scaricato")
         except Exception as e:
             return str(e)
         try:
+            print("Lo ruoto 1")
             pdf_Csv = pdfToCsv(percorsoPdf,giorno,90,True)
+            print("Lo leggo")
             docentiAssenti = leggiCsv(pdf_Csv,giorno,1)
             csv[f"{giorno}.csv"] = Csv(1)
         except:
             try:
+                print("Lettura fallita, riprovo con l'altro formato")
                 pdf_Csv = pdfToCsv(percorsoPdf,giorno,270,False)
+                print("Ruotato 2")
                 docentiAssenti = leggiCsv(pdf_Csv,giorno,2)
+                print("Letto")
                 csv[f"{giorno}.csv"] = Csv(2)
             except:
                 return f"C'è stato un problema col pdf, ti mando il link diretto al download\n\n{ottieniLinkPdf(giorno)}"
@@ -272,7 +289,7 @@ def controllaVariazioniAule(classe: str,giorno: str):
         if lista[i].name == 'span':
             if (daCercare in lista[i].text):
                 trovato = i
-            
+
             elif (trovato != None):
                 while  trovato < i-1:
                     if (lista[trovato].name == 'p'):

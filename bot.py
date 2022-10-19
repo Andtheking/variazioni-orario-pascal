@@ -271,7 +271,7 @@ def main():
     dp.add_handler(CommandHandler("start", start)) 
     dp.add_handler(CommandHandler("help", help)) # Aiuto su come si usa il bot
 
-    #dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
+    dp.add_handler(CommandHandler('classe', classe)) # Visualizza la classe che hai scelto per le notifiche la mattina
 
     dp.add_handler(CommandHandler('variazioni', variazioni, run_async=True)) # Visualizza variazioni di un'altra classe del giorno
 
@@ -280,11 +280,11 @@ def main():
     dp.add_handler(CommandHandler('broadcast', broadcast))
     dp.add_handler(CommandHandler('linkPdf', getLink))
 
-    #dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
+    dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
     dp.add_error_handler(error) # In caso di errore:
     
-    #dp.add_handler(CommandHandler('off',off))
+    dp.add_handler(CommandHandler('off',off))
     
 
     #schedule.every().day.at("00:05").do(GetUrl)
@@ -297,7 +297,7 @@ def main():
     schedule.every().friday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
     schedule.every().saturday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
     
-    ORARIO_SERA = "17:54"
+    ORARIO_SERA = "21:00"
     schedule.every().monday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
     schedule.every().tuesday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
     schedule.every().wednesday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
