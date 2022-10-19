@@ -86,9 +86,7 @@ def pdfToCsv(percorsoPdf: str, nomeOutput: str, gradi: int, lattice:bool) -> str
     print("Ruotato")
     percorsoPdf = percorsoPdf[0:percorsoPdf.rindex("/")+1] + f"{gradi}" + percorsoPdf[percorsoPdf.rindex("/")+1:]
     
-    semaforo.acquire()
     convert_into(percorsoPdf, percorsoCsv, pages="all", lattice=lattice)
-    semaforo.release()
     print("Convertito")
 
     return percorsoCsv
@@ -125,9 +123,6 @@ def clean_up(csv_file: str):
 # Rigorosamente copia-incollato da internet
 # Sauce: https://www.johndcook.com/blog/2015/05/01/rotating-pdf-pages-with-python/
 def ruotaPdf(percorsoPdf: str, gradi: int):
-    print("Entrato in ruotaPdf")
-    semaforo.acquire() # Semaforo perché non si può ruotare 2 volte lo stesso pdf contemporaneamente :P 
-    print("Semaforo ottenuto")
     try:
 
         percorsoPdfRuotato = percorsoPdf[0:percorsoPdf.rindex("/")+1] + f"{gradi}" + percorsoPdf[percorsoPdf.rindex("/")+1:]
@@ -149,8 +144,6 @@ def ruotaPdf(percorsoPdf: str, gradi: int):
 	# pdf[percorsoPdfRuotato] = datetime.datetime.now()
     except Exception as ex:
             print(str(ex))
-    semaforo.release()
-    print("Semaforo lasciato")
 
 def pdfFormato2(docentiAssenti: list[DocenteAssente], asd: pd.DataFrame):
     i = 0
@@ -204,14 +197,11 @@ def leggiCsv(percorsoCsv:str,giorno: str, formato: int) -> list[DocenteAssente] 
     
     docentiAssenti: list[DocenteAssente] = []
     
-    semaforo.acquire()
     try:
         asd = pd.read_csv(clean_up(percorsoCsv))
     except:
-        semaforo.release()
         raise Exception()
 
-    semaforo.release()
 
     if formato==1:
         pdfFormato1(docentiAssenti, asd, asd.columns[0])
@@ -236,6 +226,7 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
      # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
     global csv
 
+    semaforo.acquire()
     condizione2 = f"{giorno}.csv" in list(csv.keys())
     if condizione2:
         condizione3 = datetime.datetime.now() > csv[f"{giorno}.csv"].data + datetime.timedelta(minutes=10)
@@ -266,6 +257,8 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     else:
         print("Non scarico il pdf")
         docentiAssenti = leggiCsv(f"pdfScaricati/{giorno}.csv",giorno, csv[f"{giorno}.csv"].formato)
+    
+    semaforo.release()
 
     if type(docentiAssenti) == type(""):
         return docentiAssenti
@@ -334,3 +327,4 @@ if __name__ == "__main__":
     print(variazioniOrario + variazioniAule)
 
     
+
