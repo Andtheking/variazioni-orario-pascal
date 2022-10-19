@@ -209,10 +209,11 @@ def variazioni(update: Update, context: CallbackContext):
     if len(datiList) != 2 and len(datiList) != 1:
         robaAntiCrashPerEdit.reply_text(messaggioNonValido)
         return
+    
     database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
-    classe = datiList[0].upper().strip() if datiList[0] != '/variazioni' else idInTabella[2]
+    classe = datiList[0].upper().strip() if datiList[0] != '/variazioni' else idInTabella[0][2]
     database_disconnection()
     
     if len(classe) != 2:

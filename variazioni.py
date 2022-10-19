@@ -187,7 +187,7 @@ def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente], giorno: str):
         if stringa == "":
             return f"Nessuna variazione orario per la `{classe}` il `{giorno}`"
         else:
-            return f"Variazioni orario per il `{giorno}`\n\n{stringa}"
+            return f"Variazioni orario della `{classe}` per il `{giorno}`\n\n{stringa}"
     except Exception as e:
         print(str(e))
         return f"C'è stato un problema col pdf, ti mando il link diretto al download\n\n{ottieniLinkPdf(giorno)}"
