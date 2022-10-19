@@ -316,7 +316,7 @@ def formattaGiorno(giorno):
 def CancellaCartellaPdf():
     filelist = [ f for f in os.listdir("pdfScaricati/")]
     for f in filelist:
-        os.remove(os.path.join(filelist, f))
+        os.remove(os.path.join("pdfScaricati/", f))
 
 
 if __name__ == "__main__":

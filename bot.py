@@ -315,7 +315,7 @@ def main():
     schedule.every().friday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
     schedule.every().saturday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
 
-    schedule.every().day.at("00:00").do(CancellaCartellaPdf)
+    schedule.every().day.at("00:02").do(CancellaCartellaPdf)
 
     Thread(target=schedule_checker).start()
 
