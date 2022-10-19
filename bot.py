@@ -68,11 +68,14 @@ def database_disconnection():
 
 def help(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Imposta la tua classe con /impostaClasse: dopo averla impostata, la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno;\nVisualizza la tua classe con /classe;\nUsa /variazioni <CLASSE> per avere le variazioni orario di una qualsiasi classe.\n\nAttenzione: con /variazioni hai le variazioni DEL GIORNO ATTUALE, quindi prima di 00:00 è un po' useless.") 
+    update.message.reply_text("""Imposta la tua classe con /impostaClasse;
+Dopo averla impostata, la sera alle 21:00 e la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno dopo e attuale;
+Visualizza la tua classe con /classe;
+Usa /variazioni <CLASSE> <DD-MM> per avere le variazioni orario di una qualsiasi classe di un qualsiasi giorno.""") 
 
 def start(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Versione praticamente quasi finita. Fai /help.")
+    update.message.reply_text("Versione 2.0 \"in dubbio\". Potrebbe non funzionare bene.\nFai /help.")
 
 def impostaClasse(update: Update, context: CallbackContext):
     logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -124,7 +127,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     if len(idInTabella) == 0:
         mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{update.message.from_user.name}\",\"{messaggio}\");')
         logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
-        update.message.reply_text(f"Hai impostato \"{update.message.text}\" come classe. Riceverai una notifica alle 6.30 ogni mattina con le variazioni orario. Per non ricevere più notifiche: /off")
+        update.message.reply_text(f"Hai impostato \"{update.message.text}\" come classe. Riceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche e annunci: /off")
     else:
         mycursor.execute(f'UPDATE utenti SET classe=\"{messaggio}\" WHERE id=\"{id}\";')
         logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {update.message.date}")
@@ -172,7 +175,6 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
     
         idInTabella = mycursor.fetchall()
         database_disconnection()
-        idInTabella = [['269475423','Looka','4I'],['245996916','And','4G'],['1005129545','Sabri','4I']]
 
         if len(idInTabella) != 0:    
             for utente in idInTabella:
@@ -195,6 +197,9 @@ ALIAS_GIORNI = ["","domani","oggi"]
 def variazioni(update: Update, context: CallbackContext):
 
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
+    messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
+    
+    id = robaAntiCrashPerEdit.from_user['id']
 
     logger.info(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
     dati = robaAntiCrashPerEdit.text.replace('/variazioni ', '')
@@ -202,12 +207,16 @@ def variazioni(update: Update, context: CallbackContext):
     datiList = dati.strip().split(" ")
     
     if len(datiList) != 2 and len(datiList) != 1:
-        robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+        robaAntiCrashPerEdit.reply_text(messaggioNonValido)
         return
-
-    classe = datiList[0].upper().strip()
+    database_connection()
+    mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
+    idInTabella = mycursor.fetchall()
+    classe = datiList[0].upper().strip() if datiList[0] != '/variazioni' else idInTabella[2]
+    database_disconnection()
+    
     if len(classe) != 2:
-        robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+        robaAntiCrashPerEdit.reply_text(messaggioNonValido)
         return
     giorno = datiList[1].strip() if len(datiList) > 1 else ""
     
@@ -216,7 +225,7 @@ def variazioni(update: Update, context: CallbackContext):
     if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno in ALIAS_GIORNI) and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
         MandaVariazioni(context.bot, classe, giorno, id)
     else:
-        robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)')
+        robaAntiCrashPerEdit.reply_text(messaggioNonValido)
 
 
 def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
