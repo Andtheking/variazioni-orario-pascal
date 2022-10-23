@@ -196,8 +196,8 @@ def getLink(update: Update, context: CallbackContext):
     dati = robaAntiCrashPerEdit.text.replace('/linkPdf ', '')
 
     datiList = dati.strip().split(" ")
-
     robaAntiCrashPerEdit.reply_text(Main(datiList[0].upper().strip(),giorno = datiList[1].strip() if len(datiList) > 1 else "",onlyLink=True))
+
 
 ALIAS_GIORNI = ["","domani","oggi"]
 

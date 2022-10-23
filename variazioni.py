@@ -220,12 +220,16 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     giorno = formattaGiorno(giorno)
     
     if (onlyLink):
-        return ottieniLinkPdf(giorno)
+        try:
+            return ottieniLinkPdf(giorno)
+        except Exception as e:
+            return str(e)
 
     
      # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
     global csv
 
+    # Questo potrebbe essere la ragione della lentezza del bot
     semaforo.acquire()
     condizione2 = f"{giorno}.csv" in list(csv.keys())
     if condizione2:
@@ -237,6 +241,7 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
             percorsoPdf = scaricaPdf(ottieniLinkPdf(giorno))
             print("Scaricato")
         except Exception as e:
+            semaforo.release()
             return str(e)
         try:
             print("Lo ruoto 1")
@@ -253,6 +258,7 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
                 print("Letto")
                 csv[f"{giorno}.csv"] = Csv(2)
             except:
+                semaforo.release()
                 return f"C'è stato un problema col pdf, ti mando il link diretto al download\n\n{ottieniLinkPdf(giorno)}"
     else:
         print("Non scarico il pdf")
