@@ -66,27 +66,34 @@ def database_disconnection():
 	mydb = None
 	mycursor = None
 
+def log(messaggio: str):
+    logger.info(messaggio)
+    with open('log.txt','a') as f:
+        f.write(messaggio)
+
+
 def help(update: Update, context: CallbackContext):
-    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    
     update.message.reply_text("""Imposta la tua classe con /impostaClasse;
 Dopo averla impostata, la sera alle 21:00 e la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno dopo e attuale;
 Visualizza la tua classe con /classe;
 Usa /variazioni <CLASSE> <DD-MM> per avere le variazioni orario di una qualsiasi classe di un qualsiasi giorno.""") 
 
 def start(update: Update, context: CallbackContext):
-    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Versione 2.0 \"in dubbio\". Potrebbe non funzionare bene.\nFai /help.")
 
 def impostaClasse(update: Update, context: CallbackContext):
-    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
     return CLASSE
 
 def broadcast(update, contex):
     database_connection()
-    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     if (update.message.from_user['id'] == int(ID_TELEGRAM_AND)):
-        logger.info("Ed ha il permesso")
+        log("Ed ha il permesso")
 
         mycursor.execute(f'SELECT id, username, classe FROM utenti')
         update.message.reply_text(f'Messaggio inviato: "{update.message.text.replace("/broadcast ", "")}"')
@@ -97,10 +104,10 @@ def broadcast(update, contex):
             for utente in idInTabella:
                 id = utente[0]
                 requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={update.message.text.replace("/broadcast ","")}')
-                logger.info(f"Messaggio \"{update.message.text.replace('/broadcast ', '')}\" inviato a {utente[1]}, {utente[0]}")
+                log(f"Messaggio \"{update.message.text.replace('/broadcast ', '')}\" inviato a {utente[1]}, {utente[0]}")
     else:
         update.message.reply_text("Non hai il permesso.")
-        logger.info("E non ha il permesso")
+        log("E non ha il permesso")
     database_disconnection()
 
 
@@ -126,11 +133,11 @@ def ClasseImpostata(update: Update, context: CallbackContext):
 
     if len(idInTabella) == 0:
         mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{update.message.from_user.name}\",\"{messaggio}\");')
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
         update.message.reply_text(f"Hai impostato \"{update.message.text}\" come classe. Riceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche e annunci: /off")
     else:
         mycursor.execute(f'UPDATE utenti SET classe=\"{messaggio}\" WHERE id=\"{id}\";')
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {update.message.date}")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {update.message.date}")
         update.message.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
     
     mydb.commit()
@@ -147,11 +154,11 @@ def classe(update: Update, context: CallbackContext):
     database_disconnection()
 
     if len(idInTabella) == 0:
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({messaggio}) Data e ora: {update.message.date}")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({messaggio}) Data e ora: {update.message.date}")
         update.message.reply_text(f"Non hai una classe impostata. Impostala con /impostaClasse")
 
     else:
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la sua classe alle {update.message.date}")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la sua classe alle {update.message.date}")
         update.message.reply_text(f"Classe attuale: {idInTabella[0][2]}")
 
 
@@ -161,7 +168,7 @@ def error(update: Update, context: CallbackContext):
     context.bot.send_message(ID_CANALE_LOG, text=f'{context.bot.name}\nUpdate "{update}" caused error "{context.error}')
 
 def cancel(update: Update, context: CallbackContext):
-    logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
     database_disconnection()
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
@@ -170,7 +177,7 @@ MANDO = True
 def mandaMessaggio(giornoPrima: bool, bot: Bot):
     if MANDO:
         database_connection()
-        logger.info(f"Variazioni orario mandate agli utenti.")
+        log(f"Variazioni orario mandate agli utenti.")
         mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
         idInTabella = mycursor.fetchall()
@@ -201,7 +208,7 @@ def variazioni(update: Update, context: CallbackContext):
     
     id = robaAntiCrashPerEdit.from_user['id']
 
-    logger.info(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
+    log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
     dati = robaAntiCrashPerEdit.text.replace('/variazioni ', '')
 
     datiList = dati.strip().split(" ")
@@ -252,11 +259,11 @@ def off(update: Update, context: CallbackContext):
     idInTabella = mycursor.fetchall()
 
     if len(idInTabella) == 0:
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
         update.message.reply_text(f"Non hai una classe impostata. Se hai provato a disattivare le notifiche non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
 
     else:
-        logger.info(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
         mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
         update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
         mydb.commit()
@@ -297,8 +304,6 @@ def main():
     dp.add_handler(CommandHandler('off',off))
     
 
-    #schedule.every().day.at("00:05").do(GetUrl)
-    
     ORARIO_MATTINA = "06:30"
     schedule.every().monday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
     schedule.every().tuesday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
@@ -313,9 +318,10 @@ def main():
     schedule.every().wednesday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
     schedule.every().thursday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
     schedule.every().friday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
-    schedule.every().saturday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
+    # Niente sabato perché darebbe per domenica
+    schedule.every().sunday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
 
-    schedule.every().day.at("00:02").do(CancellaCartellaPdf)
+    schedule.every().day.at("00:00").do(CancellaCartellaPdf)
 
     Thread(target=schedule_checker).start()
 
