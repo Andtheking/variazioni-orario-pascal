@@ -69,7 +69,7 @@ def database_disconnection():
 def log(messaggio: str):
     logger.info(messaggio)
     with open('log.txt','a') as f:
-        f.write(messaggio)
+        f.write(messaggio + "\n")
 
 
 def help(update: Update, context: CallbackContext):
