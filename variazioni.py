@@ -220,7 +220,10 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     giorno = formattaGiorno(giorno)
     
     if (onlyLink):
-        return ottieniLinkPdf(giorno)
+        try:
+            return ottieniLinkPdf(giorno)
+        except Exception as e:
+            return str(e)
 
     
      # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
