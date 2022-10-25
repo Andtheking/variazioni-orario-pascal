@@ -191,9 +191,12 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
 
 
 def getLink(update: Update, context: CallbackContext):
-    robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
 
-    dati = robaAntiCrashPerEdit.text.replace('/linkPdf ', '')
+    robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
+    
+    log(f"{update.message.from_user.name}, {update.message.from_user.id} ha fatto {robaAntiCrashPerEdit.text}")
+
+    dati = robaAntiCrashPerEdit.text.lower().replace('/linkpdf ', '')
 
     datiList = dati.strip().split(" ")
     robaAntiCrashPerEdit.reply_text(Main(datiList[0].upper().strip(),giorno = datiList[1].strip() if len(datiList) > 1 else "",onlyLink=True))
