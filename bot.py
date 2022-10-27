@@ -90,6 +90,7 @@ def impostaClasse(update: Update, context: CallbackContext):
     return CLASSE
 
 def broadcast(update, contex):
+	global mycursor
     database_connection()
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     if (update.message.from_user['id'] == int(ID_TELEGRAM_AND)):
@@ -112,7 +113,7 @@ def broadcast(update, contex):
 
 
 def ClasseImpostata(update: Update, context: CallbackContext):
-
+	global mycursor
     id = update.message.from_user.id
     messaggio = str(update.message.text).upper()
     
@@ -147,7 +148,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
 def classe(update: Update, context: CallbackContext):
     id = update.message.from_user.id
     messaggio = update.message.text
-
+	global mycursor
     database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
@@ -176,6 +177,7 @@ def cancel(update: Update, context: CallbackContext):
 MANDO = True
 def mandaMessaggio(giornoPrima: bool, bot: Bot):
     if MANDO:
+		global mycursor
         database_connection()
         log(f"Variazioni orario mandate agli utenti.")
         mycursor.execute(f'SELECT id, username, classe FROM utenti')
@@ -205,7 +207,7 @@ def getLink(update: Update, context: CallbackContext):
 ALIAS_GIORNI = ["","domani","oggi"]
 
 def variazioni(update: Update, context: CallbackContext):
-
+    global mycursor
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
     messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
     
@@ -257,7 +259,8 @@ def discord(update: Update, context: CallbackContext):
 
 def off(update: Update, context: CallbackContext):
     id = update.message.from_user.id
-    database_connection()
+    global mycursor
+	database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
 
