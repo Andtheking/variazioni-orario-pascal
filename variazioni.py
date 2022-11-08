@@ -257,7 +257,7 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
                 docentiAssenti = leggiCsv(pdf_Csv,giorno,2)
                 print("Letto")
                 csv[f"{giorno}.csv"] = Csv(2)
-            except:
+            except Exception as ex:
                 semaforo.release()
                 return f"C'è stato un problema col pdf, ti mando il link diretto al download\n\n{ottieniLinkPdf(giorno)}"
     else:

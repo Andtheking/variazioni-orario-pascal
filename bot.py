@@ -205,7 +205,7 @@ def getLink(update: Update, context: CallbackContext):
 ALIAS_GIORNI = ["","domani","oggi"]
 
 def variazioni(update: Update, context: CallbackContext):
-
+    global mycursor
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
     messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
     
@@ -249,8 +249,11 @@ def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
             bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
     except Exception as e:
         # robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
-        bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
-        bot.send_message(chat_id=chatId,text="Qualcosa è andato storto, whoops. Nel dubbio riprova")
+        try: # Se l'utente ha bloccato il bot esplode tutto
+            bot.send_message(chat_id=chatId,text="Qualcosa è andato storto, whoops. Nel dubbio riprova")
+            bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
+        except:
+            pass
 
 def discord(update: Update, context: CallbackContext):
     update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
