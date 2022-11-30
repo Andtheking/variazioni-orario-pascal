@@ -46,6 +46,11 @@ def schedule_checker():
 mydb = None
 mycursor = None
 
+days = "|oggi|domani"
+#https://regex101.com/r/5s6yUW/1
+r = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
+
+
 def database_connection():
 	global mydb
 	global mycursor
@@ -187,7 +192,7 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
             for utente in idInTabella:
                 id = utente[0]
                 MandaVariazioni(bot=bot, classe=utente[2], giorno="domani" if giornoPrima else "oggi",chatId=id)
-                
+
 
 
 def getLink(update: Update, context: CallbackContext):
@@ -212,31 +217,28 @@ def variazioni(update: Update, context: CallbackContext):
     id = robaAntiCrashPerEdit.from_user['id']
 
     log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
-    dati = robaAntiCrashPerEdit.text.replace('/variazioni ', '')
+    m = r.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
 
-    datiList = dati.strip().split(" ")
-    
-    if len(datiList) != 2 and len(datiList) != 1:
+    if not m:
         robaAntiCrashPerEdit.reply_text(messaggioNonValido)
         return
+
+    classe = m.group(2)
+    giorno = m.group(3)
+
+    if (classe is None):
+        database_connection()
+        mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
+        idInTabella = mycursor.fetchall()
+        classe: str = idInTabella[0][2]
+        database_disconnection()
     
-    database_connection()
-    mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
-    idInTabella = mycursor.fetchall()
-    classe = datiList[0].upper().strip() if datiList[0] != '/variazioni' else idInTabella[0][2]
-    database_disconnection()
     
-    if len(classe) != 2:
-        robaAntiCrashPerEdit.reply_text(messaggioNonValido)
-        return
-    giorno = datiList[1].strip() if len(datiList) > 1 else ""
+    giorno = "domani" if giorno is None else giorno
     
     id = robaAntiCrashPerEdit.from_user.id
     
-    if (bool(re.match(r"\b((0[1-9]|[1-9])|[12][0-9]|3[01])\b(-|\/)\b((0[1-9]|[1-9])|1[0-2])\b",giorno)) or giorno in ALIAS_GIORNI) and (bool(re.match("[1-5]([A-Z]|[a-z])",classe))):
-        MandaVariazioni(context.bot, classe, giorno, id)
-    else:
-        robaAntiCrashPerEdit.reply_text(messaggioNonValido)
+    MandaVariazioni(context.bot, classe.upper(), giorno, id)
 
 
 def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
