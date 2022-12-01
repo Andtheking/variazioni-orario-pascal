@@ -280,7 +280,17 @@ def off(update: Update, context: CallbackContext):
     database_disconnection()
 
 
-
+def backupUtenti():
+    database_connection()
+    mycursor.execute(f'SELECT * FROM utenti;')
+    utenti: list[list[str]] = mycursor.fetchall()
+    database_disconnection()
+    
+    with open('Roba sensibile/backupUtenti.txt','a') as f:
+        f.write("--------------------------------------\n")
+        for utente in utenti:
+            f.write(f"{utente[0]} - {utente[1]} - {utente[2]}\n")
+    
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -332,6 +342,7 @@ def main():
     schedule.every().sunday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
 
     schedule.every().day.at("00:00").do(CancellaCartellaPdf)
+    schedule.every().day.at("00:00").do(backupUtenti)
 
     Thread(target=schedule_checker).start()
 
