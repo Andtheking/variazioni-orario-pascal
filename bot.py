@@ -47,9 +47,13 @@ mydb = None
 mycursor = None
 
 days = "|oggi|domani"
-#https://regex101.com/r/5s6yUW/1
-r = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
 
+
+#https://regex101.com/r/5s6yUW/1
+rVar = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
+
+
+rImp = re.compile(r"^[1-5](?:[a-z]|[A-Z])$")
 
 def database_connection():
 	global mydb
@@ -119,31 +123,27 @@ def broadcast(update, contex):
 def ClasseImpostata(update: Update, context: CallbackContext):
 
     id = update.message.from_user.id
-    messaggio = str(update.message.text).upper()
+    roboAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
+    messaggio = str(roboAntiCrashPerEdit.text).upper()
     
-    if len(messaggio) != 2:
-        update.message.reply_text("Non hai inserito una classe")
+    m = rImp.match(messaggio)
+
+    if not m:
+        roboAntiCrashPerEdit.reply_text("Non hai inserito una classe valida (1-5A-Z o 1-5a-z)")
         return
-    try:
-        if int(messaggio[0:1]) < 0 or int(messaggio[0:1]) > 5:
-            update.message.reply_text("Non hai inserito una classe")
-            return
-    except Exception as ex:
-        logging.warning(ex)
-        update.message.reply_text("Non hai inserito una classe")
-        return
+    
     database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
 
     if len(idInTabella) == 0:
-        mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{update.message.from_user.name}\",\"{messaggio}\");')
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha impostato \"{messaggio}\" come classe alle {update.message.date}")
-        update.message.reply_text(f"Hai impostato \"{update.message.text}\" come classe. Riceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche e annunci: /off")
+        mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"{messaggio}\");')
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{messaggio}\" come classe alle {roboAntiCrashPerEdit.date}")
+        roboAntiCrashPerEdit.reply_text(f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come classe. Riceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche e annunci: /off")
     else:
         mycursor.execute(f'UPDATE utenti SET classe=\"{messaggio}\" WHERE id=\"{id}\";')
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {update.message.date}")
-        update.message.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {roboAntiCrashPerEdit.date}")
+        roboAntiCrashPerEdit.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
     
     mydb.commit()
     database_disconnection()
@@ -174,7 +174,6 @@ def error(update: Update, context: CallbackContext):
 
 def cancel(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
-    database_disconnection()
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
 
@@ -217,7 +216,7 @@ def variazioni(update: Update, context: CallbackContext):
     id = robaAntiCrashPerEdit.from_user['id']
 
     log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
-    m = r.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
+    m = rVar.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
 
     if not m:
         robaAntiCrashPerEdit.reply_text(messaggioNonValido)
