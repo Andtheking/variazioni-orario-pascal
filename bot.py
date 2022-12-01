@@ -230,9 +230,12 @@ def variazioni(update: Update, context: CallbackContext):
         database_connection()
         mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
         idInTabella = mycursor.fetchall()
-        classe: str = idInTabella[0][2]
+        classe: str = idInTabella[0][2] if len(idInTabella) > 0 else None
         database_disconnection()
     
+    if classe is None:
+        robaAntiCrashPerEdit.reply_text("Non hai una classe impostata con /impostaclasse, devi specificarla con `/variazioni CLASSE GIORNO-MESE`",parse_mode='Markdown')
+        return
     
     giorno = "domani" if giorno is None else giorno
     
