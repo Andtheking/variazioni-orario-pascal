@@ -98,29 +98,39 @@ def impostaClasse(update: Update, context: CallbackContext):
     update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
     return CLASSE
 
-def broadcast(update, contex):
-    database_connection()
+def broadcast(update: Update, contex: CallbackContext):
+    global mycursor
+    
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     if (update.message.from_user['id'] == int(ID_TELEGRAM_AND)):
         log("Ed ha il permesso")
 
+        database_connection()
         mycursor.execute(f'SELECT id, username, classe FROM utenti')
-        update.message.reply_text(f'Messaggio inviato: "{update.message.text.replace("/broadcast ", "")}"')
-    
         idInTabella = mycursor.fetchall()
+        database_disconnection()
+    
+        contex.bot.send_message(ID_CANALE_LOG,f'Inizio a mandare il messaggio agli utenti:\n\n"{update.message.text.replace("/broadcast ", "")}"')
         
         if len(idInTabella) != 0:    
             for utente in idInTabella:
                 id = utente[0]
-                requests.post(f'https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={id}&text={update.message.text.replace("/broadcast ","")}')
-                log(f"Messaggio \"{update.message.text.replace('/broadcast ', '')}\" inviato a {utente[1]}, {utente[0]}")
+                contex.bot.send_message(id,update.message.text.replace("/broadcast ",""))
+                log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
+        
+        contex.bot.send_message(ID_CANALE_LOG,'Ho finito di mandare il messaggio agli utenti')
+
+
     else:
         update.message.reply_text("Non hai il permesso.")
         log("E non ha il permesso")
-    database_disconnection()
+
 
 
 def ClasseImpostata(update: Update, context: CallbackContext):
+    global mycursor
+    global mydb
+    global rImp
 
     id = update.message.from_user.id
     roboAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
@@ -150,8 +160,10 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 def classe(update: Update, context: CallbackContext):
+    global mycursor
     id = update.message.from_user.id
     messaggio = update.message.text
+
 
     database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
@@ -180,6 +192,8 @@ def cancel(update: Update, context: CallbackContext):
 MANDO = True
 def mandaMessaggio(giornoPrima: bool, bot: Bot):
     if MANDO:
+        global mycursor
+
         database_connection()
         log(f"Variazioni orario mandate agli utenti.")
         mycursor.execute(f'SELECT id, username, classe FROM utenti')
@@ -210,12 +224,15 @@ ALIAS_GIORNI = ["","domani","oggi"]
 
 def variazioni(update: Update, context: CallbackContext):
     global mycursor
+    global rVar
+    
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
     messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
     
     id = robaAntiCrashPerEdit.from_user['id']
 
     log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
+    
     m = rVar.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
 
     if not m:
@@ -264,6 +281,9 @@ def discord(update: Update, context: CallbackContext):
 
 def off(update: Update, context: CallbackContext):
     id = update.message.from_user.id
+
+    global mycursor
+
     database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
@@ -292,6 +312,9 @@ def backupUtenti():
             f.write(f"{utente[0]} - {utente[1]} - {utente[2]}\n")
     
 
+def canale(update: Update, context: CallbackContext):
+    update.message.reply_text('Canale del bot: https://t.me/+7EexVd-RIoIwZjc0')
+
 def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -316,6 +339,7 @@ def main():
 
     dp.add_handler(CommandHandler('broadcast', broadcast))
     dp.add_handler(CommandHandler('linkPdf', getLink))
+    dp.add_handler(CommandHandler('canale', canale))
 
     dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
