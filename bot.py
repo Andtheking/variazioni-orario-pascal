@@ -1,5 +1,7 @@
 TOKEN = None
 
+MANDO = True
+
 ID_CANALE_LOG = '-1001741378490'
 
 with open("Roba sensibile/token.txt","r") as file:
@@ -189,7 +191,7 @@ def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
 
-MANDO = True
+
 def mandaMessaggio(giornoPrima: bool, bot: Bot):
     if MANDO:
         global mycursor
@@ -315,6 +317,32 @@ def backupUtenti():
 def canale(update: Update, context: CallbackContext):
     update.message.reply_text('Canale del bot: https://t.me/+7EexVd-RIoIwZjc0')
 
+
+def spegniNotifiche(update: Update, context: CallbackContext):
+    
+    if (str(update.message.from_user.id) != ID_TELEGRAM_AND):
+        update.message.reply_text("Non hai il permesso!")
+        log (f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha il permesso per \"{update.message.text}\" alle {update.message.date}")
+        return
+    
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    
+    global MANDO
+    MANDO = False
+    update.message.reply_text("Notifiche spente per tutti gli utenti")
+
+def accendiNotifiche(update: Update, context: CallbackContext):
+    if (str(update.message.from_user.id) != ID_TELEGRAM_AND):
+        log (f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha il permesso per \"{update.message.text}\" alle {update.message.date}")
+        update.message.reply_text("Non hai il permesso!")
+        return
+
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+
+    global MANDO
+    MANDO = True
+    update.message.reply_text("Notifiche accese per tutti gli utenti")
+
 def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -340,6 +368,9 @@ def main():
     dp.add_handler(CommandHandler('broadcast', broadcast))
     dp.add_handler(CommandHandler('linkPdf', getLink))
     dp.add_handler(CommandHandler('canale', canale))
+
+    dp.add_handler(CommandHandler('accendiNotifiche', accendiNotifiche))
+    dp.add_handler(CommandHandler('spegniNotifiche', spegniNotifiche))
 
     dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
