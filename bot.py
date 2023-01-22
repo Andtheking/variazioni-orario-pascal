@@ -197,7 +197,7 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
         global mycursor
 
         database_connection()
-        log(f"Variazioni orario mandate agli utenti.")
+        log(f"Inizio a mandare le variazioni agli utenti")
         mycursor.execute(f'SELECT id, username, classe FROM utenti')
     
         idInTabella = mycursor.fetchall()
@@ -207,6 +207,7 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
             for utente in idInTabella:
                 id = utente[0]
                 MandaVariazioni(bot=bot, classe=utente[2], giorno="domani" if giornoPrima else "oggi",chatId=id)
+                log(f"Variazioni di {'domani' if giornoPrima else 'oggi'} mandate a: {utente[1]}")
 
 
 
@@ -223,6 +224,8 @@ def getLink(update: Update, context: CallbackContext):
 
 
 ALIAS_GIORNI = ["","domani","oggi"]
+
+import time
 
 def variazioni(update: Update, context: CallbackContext):
     global mycursor
@@ -285,6 +288,7 @@ def off(update: Update, context: CallbackContext):
     id = update.message.from_user.id
 
     global mycursor
+    global mydb
 
     database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
@@ -312,7 +316,6 @@ def backupUtenti():
         f.write("--------------------------------------\n")
         for utente in utenti:
             f.write(f"{utente[0]} - {utente[1]} - {utente[2]}\n")
-    
 
 def canale(update: Update, context: CallbackContext):
     update.message.reply_text('Canale del bot: https://t.me/+7EexVd-RIoIwZjc0')
@@ -378,7 +381,6 @@ def main():
     
     dp.add_handler(CommandHandler('off',off))
     
-
     ORARIO_MATTINA = "06:30"
     schedule.every().monday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
     schedule.every().tuesday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
@@ -399,12 +401,16 @@ def main():
     schedule.every().day.at("00:00").do(CancellaCartellaPdf)
     schedule.every().day.at("00:00").do(backupUtenti)
 
+    schedule.every(10).minutes.do(controllaSempreIPdf)
+
     Thread(target=schedule_checker).start()
 
     # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
     updater.start_polling(timeout=200)
     updater.idle()
 
-    
+def controllaSempreIPdf():
+    pass
+
 if __name__ == '__main__':
     main()
