@@ -42,7 +42,7 @@ def ottieni_info(utenti: list[list[str]], bot: Bot, soup = None): # Viene invoca
             
             # Get response object for link
             response = requests.get(link.get('href'))
-            pdfName = "pdfScaricati\\" + response.url[response.url.rindex("/")+1:]
+            pdfName = "pdfScaricati/" + response.url[response.url.rindex("/")+1:]
             giorno = GetGiorno(response.url)
             
             # Write content in pdf file
