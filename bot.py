@@ -12,6 +12,7 @@ import os
 import re
 from threading import Thread
 from time import sleep
+from bs4 import BeautifulSoup
 
 import mysql.connector
 import requests
@@ -20,7 +21,10 @@ from telegram import Bot, Message, Update, User
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           Filters, MessageHandler, Updater)
 
-from variazioni import CancellaCartellaPdf, Main, controllaVariazioniAule
+
+import python_scripts.variazioni.variazioniLive as variazioniLive
+from python_scripts.variazioni.variazioni import CancellaCartellaPdf, Main, controllaVariazioniAule
+
 
 # 0 = Host
 # 1 = User
@@ -73,6 +77,7 @@ def database_connection():
 def database_disconnection():
 	global mydb
 	global mycursor
+
 	mydb.disconnect() if mydb != None else print("No database")
 	mydb = None
 	mycursor = None
@@ -307,10 +312,7 @@ def off(update: Update, context: CallbackContext):
 
 
 def backupUtenti():
-    database_connection()
-    mycursor.execute(f'SELECT * FROM utenti;')
-    utenti: list[list[str]] = mycursor.fetchall()
-    database_disconnection()
+    utenti = ottieni_utenti()
     
     with open('Roba sensibile/backupUtenti.txt','a') as f:
         f.write("--------------------------------------\n")
@@ -401,16 +403,45 @@ def main():
     schedule.every().day.at("00:00").do(CancellaCartellaPdf)
     schedule.every().day.at("00:00").do(backupUtenti)
 
-    schedule.every(10).minutes.do(controllaSempreIPdf)
-
     Thread(target=schedule_checker).start()
+
+
+    Thread(target=check, args=[dp.bot]).start()
+
 
     # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
     updater.start_polling(timeout=200)
     updater.idle()
 
-def controllaSempreIPdf():
-    pass
+
+
+URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
+lastcheck = [""]
+
+def check(bot):
+    global lastcheck
+
+    utenti = ottieni_utenti()
+
+    while True:
+        # download the homepage
+        response = requests.get(URL)
+        soup = BeautifulSoup(response.text,'html.parser')
+        mod = soup.find_all(property="article:modified_time")
+        if lastcheck[0] == mod[0]:
+            print("Aspetto")
+            time.sleep(300) # 5 min
+            continue
+        else:
+            lastcheck = mod
+            variazioniLive.ottieni_info(utenti=utenti, bot=bot, soup=soup)
+
+def ottieni_utenti():
+    database_connection()
+    mycursor.execute(f'SELECT * FROM utenti;')
+    utenti: list[list[str]] = mycursor.fetchall()
+    database_disconnection()
+    return utenti
 
 if __name__ == '__main__':
     main()

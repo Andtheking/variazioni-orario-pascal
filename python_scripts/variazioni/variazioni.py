@@ -48,7 +48,7 @@ def ottieniLinkPdf(dataSelezionata: str) -> str:
         if (f"-{data[0]}-" in linkPdf.lower() or f"-{data[0][1:]}-" in linkPdf.lower()) and f"{convertiMese(data[1]).lower()}" in linkPdf.lower():
             link = linkPdf
     if (link == ""):
-        raise Exception(f"Non è stata pubblicata una variazione orario per il `{dataSelezionata}`")
+        return None
 
     
     return link
@@ -85,10 +85,8 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     giorno = formattaGiorno(giorno)
     
     if (onlyLink):
-        try:
-            return ottieniLinkPdf(giorno)
-        except Exception as e:
-            return str(e)
+        l = ottieniLinkPdf(giorno)
+        return l if l != None else f"Non è stata pubblicata una variazione orario per il `{giorno}`"
 
     
      # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
@@ -98,20 +96,13 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     
     linkPdf = ottieniLinkPdf(giorno)
 
-    possibilePdf = f'pdfScaricati/{linkPdf[linkPdf.rindex("/")+1:]}'
+    if linkPdf == None:
+        semaforo.release()
+        return f"Non è stata pubblicata una variazione orario per il `{giorno}`"
 
-    if (not possibilePdf in sent_pdfs) or (possibilePdf in sent_pdfs and datetime.datetime.now() > sent_pdfs[possibilePdf] + datetime.timedelta(minutes=10)):
-        print("Scarico il pdf")
-        try:
-            percorsoPdf = scaricaPdf(linkPdf)
-            sent_pdfs[percorsoPdf] = datetime.datetime.now()
-        except Exception as e:
-            semaforo.release()
-            return str(e)
-    else:
-        print("Non scarico il pdf")
-        percorsoPdf = possibilePdf
-    
+
+    percorsoPdf = f'pdfScaricati/{linkPdf[linkPdf.rindex("/")+1:]}'
+    semaforo.release()
     docentiAssenti = LeggiPdf(percorsoPdf)
 
     semaforo.release()
@@ -161,7 +152,7 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
 
 def FormattaOutput(variazioniOrario: list[DocenteAssente], giorno: str, classe: str):
     
-    if variazioniOrario == None:
+    if variazioniOrario == None or variazioniOrario == []:
         return f"Nessuna variazione orario per la `{classe}` il `{giorno}`"
     
     stringa = ""
