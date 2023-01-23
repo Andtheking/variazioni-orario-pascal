@@ -122,8 +122,11 @@ def broadcast(update: Update, contex: CallbackContext):
         if len(idInTabella) != 0:    
             for utente in idInTabella:
                 id = utente[0]
-                contex.bot.send_message(id,update.message.text.replace("/broadcast ",""))
-                log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
+                try:
+                    contex.bot.send_message(id,update.message.text.replace("/broadcast ",""))
+                    log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
+                except:
+                    pass
         
         contex.bot.send_message(ID_CANALE_LOG,'Ho finito di mandare il messaggio agli utenti')
 

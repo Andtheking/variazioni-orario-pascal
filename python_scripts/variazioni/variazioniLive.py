@@ -71,10 +71,9 @@ def ottieni_info(utenti: list[list[str]], bot: Bot, soup = None): # Viene invoca
                 variazioniOrarioClasse = variazioni.CercaClasse(classe,variazioniOrario)
                 stringa = variazioni.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
                 
-                print(f"Mando variazioni {classe} a {utente[1]}")
-                
                 try:
                     bot.send_message(chat_id=id, text=stringa, parse_mode="Markdown")            
+                    print(f"Mandate variazioni {classe} a {utente[1]}")
                 except:
                     pass
 
