@@ -72,7 +72,11 @@ def ottieni_info(utenti: list[list[str]], bot: Bot, soup = None): # Viene invoca
                 stringa = variazioni.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
                 
                 print(f"Mando variazioni {classe} a {utente[1]}")
-                bot.send_message(chat_id=id, text=stringa, parse_mode="Markdown")            
+                
+                try:
+                    bot.send_message(chat_id=id, text=stringa, parse_mode="Markdown")            
+                except:
+                    pass
 
 ID_TELEGRAM_AND = "245996916"
 
