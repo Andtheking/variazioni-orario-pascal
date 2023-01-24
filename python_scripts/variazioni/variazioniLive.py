@@ -11,7 +11,15 @@ from threading import Thread
 URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
 TOKEN = "5744550511:AAHECgzzDotFxJgH_G3XwN7yfrXKmmhjFx4"
 
-sent_pdfs = open("sent_pdfs.txt","r").readline().split(' - ')[0:-1]
+sent_pdfs: list[str]
+
+try: 
+    with open("sent_pdfs.txt","r") as f:
+        sent_pdfs = f.readline().split(' - ')[0:-1]
+except:
+    open("sent_pdfs.txt","w").close()
+    sent_pdfs = []
+
 lastcheck = [""]
 
 def get_pdf_hash(filepath):
@@ -29,8 +37,16 @@ def get_pdf_hash(filepath):
 
 def ottieni_info(utenti: list[list[str]], bot: Bot, soup = None): # Viene invocato se la pagina risulta essere stata cambiata
     if (soup == None):
-        response = requests.get(URL)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        Ok = False
+        while not Ok:
+            try:
+                response = requests.get(URL)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                Ok = True
+            except:
+                Ok = False
+
+        
     
     links = soup.find_all('a')
     i = 0
@@ -41,7 +57,14 @@ def ottieni_info(utenti: list[list[str]], bot: Bot, soup = None): # Viene invoca
             print("Downloading file: ", i)
             
             # Get response object for link
-            response = requests.get(link.get('href'))
+            Ok = False
+            while not Ok:
+                try:
+                    response = requests.get(link.get('href'))
+                    Ok = True
+                except:
+                    Ok = False
+                
             pdfName = "pdfScaricati/" + response.url[response.url.rindex("/")+1:]
             giorno = GetGiorno(response.url)
             

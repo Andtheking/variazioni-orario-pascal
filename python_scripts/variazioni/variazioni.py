@@ -89,9 +89,8 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
         return l if l != None else f"Non è stata pubblicata una variazione orario per il `{giorno}`"
 
     
-     # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
+    # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
     
-    # Questo potrebbe essere la ragione della lentezza del bot
     semaforo.acquire()
     
     linkPdf = ottieniLinkPdf(giorno)
@@ -102,6 +101,9 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
 
 
     percorsoPdf = f'pdfScaricati/{linkPdf[linkPdf.rindex("/")+1:]}'
+    
+    # percorsoPdf = "pdfScaricati/Variazioni-orario-MERCOLEDI-24-GENNAIO-v4.pdf" # PER TEST
+    
     semaforo.release()
     docentiAssenti = LeggiPdf(percorsoPdf)
 
@@ -121,7 +123,10 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
     for page in pages:
         pdfText = page.extract_text()
         sheesh = pdfText.split('\n')
-        del sheesh[0:9]
+        
+        while len(sheesh[0]) != 3 or sheesh[0] == "Ora":
+            del sheesh[0]
+
         for string in sheesh:
             if string != '':
                 pdfTextPolished += string + '\n'
@@ -131,9 +136,13 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
         
         
     for i in range(0,len(pdfTextArray)-1,2):
-        test = pdfTextArray[i] + pdfTextArray[i+1]
-            
-        informazioni = re.match(REGEX_OUTPUT,test).groupdict()
+        test1 = pdfTextArray[i] + pdfTextArray[i+1]
+        test2 = pdfTextArray[i-1] + pdfTextArray[i]
+        
+        try:
+            informazioni = re.match(REGEX_OUTPUT,test1).groupdict()
+        except:
+            informazioni = re.match(REGEX_OUTPUT,test2).groupdict()
 
         for key, value in informazioni.items():
             informazioni[key] = value.strip() if value != None else value
@@ -224,10 +233,7 @@ def CancellaCartellaPdf():
 
 if __name__ == "__main__":
     #print(Main("4I"))
-    variazioniOrario = Main('5D','domani')
-    variazioniAule = controllaVariazioniAule('4I','domani')
-
-    print(str(variazioniOrario) + variazioniAule)
+    print(Main("4I","24-01"))
 
     
 

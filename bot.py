@@ -428,8 +428,15 @@ def check(bot):
 
     while True:
         # download the homepage
-        response = requests.get(URL)
-        soup = BeautifulSoup(response.text,'html.parser')
+        Ok = False
+        while not Ok:
+            try:
+                response = requests.get(URL)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                Ok = True
+            except:
+                Ok = False
+        
         mod = soup.find_all(property="article:modified_time")
         if lastcheck[0] == mod[0]:
             print("Aspetto")
@@ -444,6 +451,7 @@ def ottieni_utenti():
     mycursor.execute(f'SELECT * FROM utenti;')
     utenti: list[list[str]] = mycursor.fetchall()
     database_disconnection()
+    
     return utenti
 
 if __name__ == '__main__':
