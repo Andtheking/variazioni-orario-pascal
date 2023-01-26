@@ -118,17 +118,23 @@ def broadcast(update: Update, contex: CallbackContext):
         database_disconnection()
     
         contex.bot.send_message(ID_CANALE_LOG,f'Inizio a mandare il messaggio agli utenti:\n\n"{update.message.text.replace("/broadcast ", "")}"')
-        
+        log(f'Inizio a mandare il messaggio agli utenti:\n\n"{update.message.text.replace("/broadcast ", "")}"')
+
+
         if len(idInTabella) != 0:    
             for utente in idInTabella:
                 id = utente[0]
-                try:
-                    contex.bot.send_message(id,update.message.text.replace("/broadcast ",""))
-                    log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
-                except:
-                    pass
+                tuttoOk = False
+                while tuttoOk:
+                    try:
+                        contex.bot.send_message(id,update.message.text.replace("/broadcast ",""))
+                        log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
+                        tuttoOk = True
+                    except:
+                        tuttoOk = False
         
         contex.bot.send_message(ID_CANALE_LOG,'Ho finito di mandare il messaggio agli utenti')
+        log('Ho finito di mandare il messaggio agli utenti')
 
 
     else:
@@ -193,6 +199,7 @@ def error(update: Update, context: CallbackContext):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     context.bot.send_message(ID_CANALE_LOG, text=f'{context.bot.name}\nUpdate "{update}" caused error "{context.error}')
+    log(f'Update "{update}" caused error "{context.error}')
 
 def cancel(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
@@ -278,14 +285,21 @@ def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
         variazioniOrario = f"{Main(classe,giorno)}"
         variazioniAule = f"{controllaVariazioniAule(classe,giorno)}"
 
-        bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
-        if variazioniAule != '':
-            bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
+        tuttoOk = False
+        while tuttoOk:
+            try:
+                bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
+                if variazioniAule != '':
+                    bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
+                tuttoOk = True
+            except:
+                tuttoOk = False
     except Exception as e:
         # robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
         try: # Se l'utente ha bloccato il bot esplode tutto
             bot.send_message(chat_id=chatId,text="Qualcosa è andato storto, whoops. Nel dubbio riprova")
             bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
+            log(f'{str(e)}')
         except:
             pass
 
