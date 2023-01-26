@@ -125,7 +125,7 @@ def broadcast(update: Update, contex: CallbackContext):
             for utente in idInTabella:
                 id = utente[0]
                 tuttoOk = False
-                while tuttoOk:
+                while not tuttoOk:
                     try:
                         contex.bot.send_message(id,update.message.text.replace("/broadcast ",""))
                         log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
@@ -286,7 +286,7 @@ def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
         variazioniAule = f"{controllaVariazioniAule(classe,giorno)}"
 
         tuttoOk = False
-        while tuttoOk:
+        while not tuttoOk:
             try:
                 bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
                 if variazioniAule != '':
