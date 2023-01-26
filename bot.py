@@ -337,6 +337,7 @@ def spegniNotifiche(update: Update, context: CallbackContext):
     
     global MANDO
     MANDO = False
+    
     update.message.reply_text("Notifiche spente per tutti gli utenti")
 
 def accendiNotifiche(update: Update, context: CallbackContext):
