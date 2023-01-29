@@ -90,12 +90,23 @@ def ottieni_info(utenti: list[list[str]], bot: Bot, soup = None): # Viene invoca
                 classe = utente[2]
                 id = utente[0]
 
-                variazioniOrario = variazioni.LeggiPdf(pdfName)
+                avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
+                try:
+                    variazioniOrario = variazioni.LeggiPdf(pdfName)
+                except:
+                    try:
+                        bot.send_message(chat_id=id, text=avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}", parse_mode="Markdown")
+                        print(f"Mandato errore pdf a {utente[1]}")
+                    except:
+                        pass
+
+                    continue
+                
                 variazioniOrarioClasse = variazioni.CercaClasse(classe,variazioniOrario)
                 stringa = variazioni.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
                 
                 try:
-                    bot.send_message(chat_id=id, text=stringa, parse_mode="Markdown")            
+                    bot.send_message(chat_id=id, text=avviso+stringa, parse_mode="Markdown")            
                     print(f"Mandate variazioni {classe} a {utente[1]}")
                 except:
                     pass

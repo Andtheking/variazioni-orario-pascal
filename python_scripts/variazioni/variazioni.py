@@ -94,23 +94,20 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
 
     # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
 
-    semaforo.acquire()
 
     linkPdf = ottieniLinkPdf(giorno)
 
     if linkPdf == None:
-        semaforo.release()
         return f"Non è stata pubblicata una variazione orario per il `{giorno}`"
 
     percorsoPdf = f'pdfScaricati/{linkPdf[linkPdf.rindex("/")+1:]}'
-
     # percorsoPdf = "pdfScaricati/Variazioni-orario-MERCOLEDI-24-GENNAIO-v4.pdf" # PER TEST
 
-    semaforo.release()
+    semaforo.acquire()
     docentiAssenti = LeggiPdf(percorsoPdf)
-
     semaforo.release()
-
+    
+    
     variazioni = FormattaOutput(CercaClasse(
         classeDaCercare, docentiAssenti), giorno=giorno, classe=classeDaCercare)
     return variazioni
@@ -135,7 +132,7 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
             if string != '':
                 pdfTextPolished += string + '\n'
         pass
-
+    
     pdfTextArray = pdfTextPolished.split('\n')
 
     for i in range(0, len(pdfTextArray)-1, 2):
