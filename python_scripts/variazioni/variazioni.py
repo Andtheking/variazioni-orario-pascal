@@ -104,7 +104,11 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     # percorsoPdf = "pdfScaricati/Variazioni-orario-MERCOLEDI-24-GENNAIO-v4.pdf" # PER TEST
 
     semaforo.acquire()
-    docentiAssenti = LeggiPdf(percorsoPdf)
+    try:
+        docentiAssenti = LeggiPdf(percorsoPdf)
+    except:
+        semaforo.release()
+        return f"Qualcosa è andato storto nella lettura del pdf del giorno 30-01.\n\nEcco il link:\n{linkPdf}"
     semaforo.release()
     
     
