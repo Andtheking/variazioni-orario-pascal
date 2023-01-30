@@ -7,6 +7,7 @@ ID_CANALE_LOG = '-1001741378490'
 with open("Roba sensibile/token.txt","r") as file:
     TOKEN = file.read().splitlines()[0]
 
+import hashlib
 import logging
 import os
 import re
@@ -23,7 +24,7 @@ from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
 
 
 import python_scripts.variazioni.variazioniLive as variazioniLive
-from python_scripts.variazioni.variazioni import CancellaCartellaPdf, Main, controllaVariazioniAule
+import python_scripts.variazioni.variazioni as variazioniFile
 
 
 # 0 = Host
@@ -78,7 +79,7 @@ def database_disconnection():
 	global mydb
 	global mycursor
 
-	mydb.disconnect() if mydb != None else print("No database")
+	mydb.disconnect() if mydb != None else log("No database")
 	mydb = None
 	mycursor = None
 
@@ -235,7 +236,7 @@ def getLink(update: Update, context: CallbackContext):
     dati = robaAntiCrashPerEdit.text.lower().replace('/linkpdf ', '')
 
     datiList = dati.strip().split(" ")
-    robaAntiCrashPerEdit.reply_text(Main(datiList[0].upper().strip(),giorno = datiList[1].strip() if len(datiList) > 1 else "",onlyLink=True))
+    robaAntiCrashPerEdit.reply_text(variazioniFile.Main(datiList[0].upper().strip(),giorno = datiList[1].strip() if len(datiList) > 1 else "",onlyLink=True))
 
 
 ALIAS_GIORNI = ["","domani","oggi"]
@@ -282,8 +283,8 @@ def variazioni(update: Update, context: CallbackContext):
 
 def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
     try:
-        variazioniOrario = f"{Main(classe,giorno)}"
-        variazioniAule = f"{controllaVariazioniAule(classe,giorno)}"
+        variazioniOrario = f"{variazioniFile.Main(classe,giorno)}"
+        variazioniAule = f"{variazioniFile.controllaVariazioniAule(classe,giorno)}"
 
         tuttoOk = False
         while not tuttoOk:
@@ -370,6 +371,15 @@ def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
     
+    global sent_pdfs
+    
+    # Per salvare i pdf già mandati in caso di riavvio del bot
+    try: 
+        with open("sent_pdfs.txt","r") as f:
+            sent_pdfs = f.readline().split(' - ')[0:-1]
+    except:
+        open("sent_pdfs.txt","w").close()
+        sent_pdfs = []
     
     imposta_classe = ConversationHandler(
         entry_points=[CommandHandler("impostaClasse", impostaClasse)],
@@ -418,7 +428,7 @@ def main():
     # Niente sabato perché darebbe per domenica
     schedule.every().sunday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
 
-    schedule.every().day.at("00:00").do(CancellaCartellaPdf)
+    schedule.every().day.at("00:00").do(variazioniFile.CancellaCartellaPdf) # TODO: Da riguardare, causa errore alla mattina
     schedule.every().day.at("00:00").do(backupUtenti)
 
     Thread(target=schedule_checker).start()
@@ -427,23 +437,47 @@ def main():
     Thread(target=check, args=[dp.bot]).start()
 
 
-    # updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=TOKEN, webhook_url="https://variazioni-orario-pascal.herokuapp.com/" + TOKEN)
     updater.start_polling(timeout=200)
     updater.idle()
 
 
 
 URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
-lastcheck = [""]
 
+
+
+def ottieni_utenti() -> list[list[str]]:
+    database_connection()
+    mycursor.execute(f'SELECT * FROM utenti;')
+    utenti: list[list[str]] = mycursor.fetchall()
+    database_disconnection()
+    
+    return utenti
+
+
+# DA QUA IN GIÙ PER CONTROLLO LIVE DELLE VARIAZIONI
+
+def get_pdf_hash(filepath):
+    """
+    Calcola l'hash del contenuto del pdf
+    Thanks chat gpt
+    """
+    BLOCKSIZE = 65536
+    hasher = hashlib.sha1()
+    with open(filepath, 'rb') as pdf:
+        buf = pdf.read(BLOCKSIZE)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = pdf.read(BLOCKSIZE)
+    return hasher.hexdigest()
+
+
+lastcheck = [""]
 def check(bot):
     global lastcheck
 
-    utenti = ottieni_utenti()
-
     while True:
-        # download the homepage
-        Ok = False
+        Ok = False 
         while not Ok:
             try:
                 response = requests.get(URL)
@@ -452,22 +486,108 @@ def check(bot):
             except:
                 Ok = False
         
+
         mod = soup.find_all(property="article:modified_time")
+
         if lastcheck[0] == mod[0]:
-            print("Aspetto")
+            # print("Aspetto") # Non più necessario, sappiamo che funziona
             time.sleep(300) # 5 min
             continue
         else:
             lastcheck = mod
-            variazioniLive.ottieni_info(utenti=utenti, bot=bot, soup=soup)
+            ottieni_info(bot=bot, soup=soup)
 
-def ottieni_utenti():
-    database_connection()
-    mycursor.execute(f'SELECT * FROM utenti;')
-    utenti: list[list[str]] = mycursor.fetchall()
-    database_disconnection()
-    
-    return utenti
+def getGiorno(url: str):
+    url = url[url.rindex('/')+1:]
+    test = url.split('-')
+    del test[0:3]
+    giorno = test[0] + "-" + convertiMese(test[1].lower())
+    return giorno
+
+def convertiMese(mese: str):
+    mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
+    for i,m in enumerate(mesi):
+        if mese == m:
+            i+=1
+            return str(i) if i > 9 else '0' + str(i)
+
+sent_pdfs: list[str]
+
+def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta essere stata cambiata
+    if (soup == None): # check() lo chiama con il soup, così da non dover rifare la richiesta al sito e perdere tempo
+        Ok = False
+        while not Ok:
+            try:
+                response = requests.get(URL)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                Ok = True
+            except:
+                Ok = False
+
+    links = soup.find_all('a')
+
+    for link in links: # Controlla tutti i link nella pagina
+        if ('.pdf' in link.get('href', [])): # Se è un pdf
+            pdfName = link.get('href',[])[link.get('href',[]).rindex("/")+1:]
+            log("Downloading file: " + f"\"{pdfName}\"")
+            
+            Ok = False # Questo ciclo serve in caso esplode mentre fa la richiesta (Forse non necessario)
+            while not Ok:
+                try:
+                    response = requests.get(link.get('href')) # Fa una richiesta al link e lo scarica
+                    Ok = True
+                except:
+                    Ok = False
+                
+            pdfPath = "pdfScaricati/" + pdfName
+            giorno = getGiorno(response.url)
+            
+            
+            a_pdf = open(pdfPath, 'wb')
+            a_pdf.write(response.content) # Scrivi il contenuto del pdf scaricato in un file
+            a_pdf.close()
+
+            pdf_hash = get_pdf_hash(pdfPath) # Prendo l'hash per riconoscere il pdf in modo da non inviarlo ancora
+                                             # Al prossimo cambiamento del sito. 
+            
+            global sent_pdfs
+            
+            if pdf_hash in sent_pdfs: # Se il pdf e gia stato inviato si ferma e passa al prossimo link
+                continue
+            
+            sent_pdfs.append(pdf_hash)
+
+            with open("sent_pdfs.txt","w") as f: # Salvataggio su file per poter riavviare il bot con tranquillità
+                for k in sent_pdfs:
+                    f.write(k + ' - ')
+
+
+            for utente in ottieni_utenti():
+                classe = utente[2]
+                id = utente[0]
+
+                avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
+                try:
+                    variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
+                except:
+                    try: # Questo try serve in caso l'utente abbia bloccato il bot
+                        bot.send_message(chat_id=id, text=avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}", parse_mode="Markdown")
+                        log(f"Mandato errore pdf a {utente[1]}")
+                    except: # Ed in quel caso lo salta, ma senza crashare
+
+                        pass
+
+                    continue #Salta il resto del codice
+                
+                variazioniOrarioClasse = variazioniFile.CercaClasse(classe,variazioniOrario)
+                stringa = variazioniFile.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
+                
+                try:
+                    bot.send_message(chat_id=id, text=avviso+stringa, parse_mode="Markdown")            
+                    log(f"Mandate variazioni {classe} a {utente[1]}")
+                except:
+                    pass
+
 
 if __name__ == '__main__':
     main()

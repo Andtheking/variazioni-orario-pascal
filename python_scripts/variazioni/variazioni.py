@@ -62,12 +62,10 @@ def scaricaPdf(link: str) -> str:
 
     return f'pdfScaricati/{link[link.rindex("/")+1:]}'
 
-
 def convertiMese(n: str):
     mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
             "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
     return mesi[int(n)-1].capitalize()
-
 
 def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente]) -> str:
 
@@ -84,16 +82,11 @@ REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>[1-5][A-Z])\((?P<aula>.+?)\)(?P<prof_
 
 
 def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False) -> str:
-    #TODO Quando due utenti fanno un comando allo stesso tempo, non si deve bloccare
-
     giorno = formattaGiorno(giorno)
 
     if (onlyLink):
         l = ottieniLinkPdf(giorno)
         return l if l != None else f"Non è stata pubblicata una variazione orario per il `{giorno}`"
-
-    # datetime.datetime.now() > csv[nomeCsv] + datetime.timedelta(minutes=10)
-
 
     linkPdf = ottieniLinkPdf(giorno)
 
@@ -101,7 +94,6 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
         return f"Non è stata pubblicata una variazione orario per il `{giorno}`"
 
     percorsoPdf = f'pdfScaricati/{linkPdf[linkPdf.rindex("/")+1:]}'
-    # percorsoPdf = "pdfScaricati/Variazioni-orario-MERCOLEDI-24-GENNAIO-v4.pdf" # PER TEST
 
     semaforo.acquire()
     try:
@@ -115,7 +107,6 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
     variazioni = FormattaOutput(CercaClasse(
         classeDaCercare, docentiAssenti), giorno=giorno, classe=classeDaCercare)
     return variazioni
-
 
 def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
     docentiAssenti: list[DocenteAssente] = []
@@ -184,7 +175,6 @@ Note: `{docente.note}`\n\n"""
     return f"Variazioni orario della `{classe}` per il `{giorno}`\n\n{stringa}"
 
 
-# TODO: Da riguardare
 def controllaVariazioniAule(classe: str, giorno: str):
     soup = BeautifulSoup(requests.get(URL).content, "html.parser")
 
