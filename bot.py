@@ -1,15 +1,13 @@
 TOKEN = None
-
 MANDO = True
 
-ID_CANALE_LOG = '-1001741378490'
+ID_CANALE_LOG = '-1001837249321'
 
 with open("Roba sensibile/token.txt","r") as file:
     TOKEN = file.read().splitlines()[0]
 
 import hashlib
 import logging
-import os
 import re
 from threading import Thread
 from time import sleep
@@ -35,10 +33,15 @@ import python_scripts.variazioni.variazioni as variazioniFile
 with open("Roba sensibile/database.txt","r") as file:
     credenziali_database = file.read().splitlines()
 
-PORT = int(os.environ.get('PORT','8443'))
+# PORT = int(os.environ.get('PORT','8443'))
 
 CLASSE = 0
 ID_TELEGRAM_AND = "245996916"
+
+ADMINS: dict[int,str] = {
+    245996916:"A", # @Andtheking, me stesso
+    503421671:"E", # @NiniEdo, Edoardo Nini 5L mi ha aiutato un po' con la versione 3.0 e hosta lui il bot.
+}
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -58,7 +61,6 @@ days = "|oggi|domani"
 
 #https://regex101.com/r/5s6yUW/1
 rVar = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
-
 
 rImp = re.compile(r"^[1-5](?:[a-z]|[A-Z])$")
 
@@ -83,12 +85,17 @@ def database_disconnection():
 	mydb = None
 	mycursor = None
 
-def log(messaggio: str):
+def log(messaggio: str, bot: Bot = None):
     logger.info(messaggio)
     with open('log.txt','a') as f:
-        f.write(messaggio + "\n")
+        f.write(time.asctime() + " - " + messaggio + "\n")
 
+    if bot == None:
+        return
 
+    bot.send_message(chat_id=ID_CANALE_LOG,text=messaggio)
+    
+        
 def help(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     
@@ -110,39 +117,37 @@ def broadcast(update: Update, contex: CallbackContext):
     global mycursor
     
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    if (update.message.from_user['id'] == int(ID_TELEGRAM_AND)):
-        log("Ed ha il permesso")
+    if (update.message.from_user['id'] in ADMINS):
+        log("Ed ha il permesso",contex.bot)
 
-        database_connection()
-        mycursor.execute(f'SELECT id, username, classe FROM utenti')
-        idInTabella = mycursor.fetchall()
-        database_disconnection()
-    
-        contex.bot.send_message(ID_CANALE_LOG,f'Inizio a mandare il messaggio agli utenti:\n\n"{update.message.text.replace("/broadcast ", "")}"')
-        log(f'Inizio a mandare il messaggio agli utenti:\n\n"{update.message.text.replace("/broadcast ", "")}"')
+        messaggio = update.message.text.replace("/broadcast","").strip()
 
+        if len(messaggio) == 0:
+            update.message.reply_text("Nessun messaggio, l'hai cliccato? lol")
+            log("Ma non ha scritto nulla",contex.bot)
+            return
 
-        if len(idInTabella) != 0:    
-            for utente in idInTabella:
-                id = utente[0]
-                tuttoOk = False
-                while not tuttoOk:
-                    try:
-                        contex.bot.send_message(id,update.message.text.replace("/broadcast ",""))
-                        log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
-                        tuttoOk = True
-                    except:
-                        tuttoOk = False
+        log(f'Inizio a mandare il messaggio agli utenti:\n\n"{update.message.text.replace("/broadcast ", "")}"',contex.bot)
+
+        for utente in ottieni_utenti():
+            id = utente[0]
+            tuttoOk = False
+            while not tuttoOk:
+                try:
+                    contex.bot.send_message(id,update.message.text.replace("/broadcast ","") + f"\n\n~{ADMINS[update.message.from_user['id']]}")
+                    log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
+                    tuttoOk = True
+                except:
+                    tuttoOk = False
         
-        contex.bot.send_message(ID_CANALE_LOG,'Ho finito di mandare il messaggio agli utenti')
-        log('Ho finito di mandare il messaggio agli utenti')
+        log('Ho finito di mandare il messaggio agli utenti',contex.bot)
 
 
     else:
-        update.message.reply_text("Non hai il permesso.")
-        log("E non ha il permesso")
+        update.message.reply_text("Non hai il permesso!")
+        log("E non ha il permesso",contex.bot)
 
-
+# TODO: Finire di cambiare le chiamate del metodo log() quando posso mettere context.bot
 
 def ClasseImpostata(update: Update, context: CallbackContext):
     global mycursor
@@ -343,7 +348,7 @@ def canale(update: Update, context: CallbackContext):
 
 def spegniNotifiche(update: Update, context: CallbackContext):
     
-    if (str(update.message.from_user.id) != ID_TELEGRAM_AND):
+    if (not update.message.from_user.id in ADMINS):
         update.message.reply_text("Non hai il permesso!")
         log (f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha il permesso per \"{update.message.text}\" alle {update.message.date}")
         return
@@ -356,7 +361,7 @@ def spegniNotifiche(update: Update, context: CallbackContext):
     update.message.reply_text("Notifiche spente per tutti gli utenti")
 
 def accendiNotifiche(update: Update, context: CallbackContext):
-    if (str(update.message.from_user.id) != ID_TELEGRAM_AND):
+    if (not update.message.from_user.id in ADMINS):
         log (f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha il permesso per \"{update.message.text}\" alle {update.message.date}")
         update.message.reply_text("Non hai il permesso!")
         return
@@ -442,10 +447,6 @@ def main():
 
 
 
-URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
-
-
-
 def ottieni_utenti() -> list[list[str]]:
     database_connection()
     mycursor.execute(f'SELECT * FROM utenti;')
@@ -454,8 +455,8 @@ def ottieni_utenti() -> list[list[str]]:
     
     return utenti
 
-
 # DA QUA IN GIÙ PER CONTROLLO LIVE DELLE VARIAZIONI
+URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
 
 def get_pdf_hash(filepath):
     """
@@ -471,12 +472,14 @@ def get_pdf_hash(filepath):
             buf = pdf.read(BLOCKSIZE)
     return hasher.hexdigest()
 
-
 lastcheck = [""]
 def check(bot):
     global lastcheck
 
     while True:
+        if not MANDO: # Se le notifiche sono spente 
+            continue  # Non fare nada.
+
         Ok = False 
         while not Ok:
             try:
@@ -485,7 +488,6 @@ def check(bot):
                 Ok = True
             except:
                 Ok = False
-        
 
         mod = soup.find_all(property="article:modified_time")
 
@@ -511,8 +513,7 @@ def convertiMese(mese: str):
             i+=1
             return str(i) if i > 9 else '0' + str(i)
 
-sent_pdfs: list[str]
-
+sent_pdfs: list[str] 
 def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta essere stata cambiata
     if (soup == None): # check() lo chiama con il soup, così da non dover rifare la richiesta al sito e perdere tempo
         Ok = False
@@ -542,10 +543,9 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
             pdfPath = "pdfScaricati/" + pdfName
             giorno = getGiorno(response.url)
             
-            
-            a_pdf = open(pdfPath, 'wb')
-            a_pdf.write(response.content) # Scrivi il contenuto del pdf scaricato in un file
-            a_pdf.close()
+            # Scrivi il contenuto del pdf scaricato in un file
+            with open(pdfPath, 'wb') as pdf:
+                pdf.write(response.content) 
 
             pdf_hash = get_pdf_hash(pdfPath) # Prendo l'hash per riconoscere il pdf in modo da non inviarlo ancora
                                              # Al prossimo cambiamento del sito. 
@@ -561,7 +561,6 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 for k in sent_pdfs:
                     f.write(k + ' - ')
 
-
             for utente in ottieni_utenti():
                 classe = utente[2]
                 id = utente[0]
@@ -574,9 +573,7 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                         bot.send_message(chat_id=id, text=avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}", parse_mode="Markdown")
                         log(f"Mandato errore pdf a {utente[1]}")
                     except: # Ed in quel caso lo salta, ma senza crashare
-
                         pass
-
                     continue #Salta il resto del codice
                 
                 variazioniOrarioClasse = variazioniFile.CercaClasse(classe,variazioniOrario)
@@ -587,7 +584,6 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                     log(f"Mandate variazioni {classe} a {utente[1]}")
                 except:
                     pass
-
 
 if __name__ == '__main__':
     main()
