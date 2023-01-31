@@ -108,7 +108,7 @@ Usa /variazioni <CLASSE> <DD-MM> per avere le variazioni orario di una qualsiasi
 
 def start(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Versione 2.0 \"in dubbio\". Potrebbe non funzionare bene.\nFai /help.")
+    update.message.reply_text("Versione 3.0 in prova. Potrebbe non funzionare bene.\nFai /help.")
 
 def impostaClasse(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -166,9 +166,10 @@ def ClasseImpostata(update: Update, context: CallbackContext):
         roboAntiCrashPerEdit.reply_text("Non hai inserito una classe valida (1-5A-Z o 1-5a-z)")
         return
     
-    database_connection()
 # TODO: CONTINUARE DA QUI
     utenti = ottieniUtentiDaID(id=id)
+    
+    database_connection()
     if len(utenti) == 0:
         mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"{messaggio}\");')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{messaggio}\" come classe alle {roboAntiCrashPerEdit.date}")
@@ -180,13 +181,13 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     
     mydb.commit()
     database_disconnection()
+
     return ConversationHandler.END
 
 def classe(update: Update, context: CallbackContext):
     global mycursor
     id = update.message.from_user.id
     messaggio = update.message.text
-
 
     database_connection()
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
@@ -223,6 +224,11 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
         utenti = ottieni_utenti()
         if len(utenti) != 0:
             for utente in utenti:
+                if (giornoPrima and not utente[4]):
+                    continue
+                elif (not giornoPrima and not utente[3]):
+                    continue
+
                 id = utente[0]
                 classe = utente[2]
                 MandaVariazioni(
@@ -306,7 +312,7 @@ def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
         except:
             pass
 
-def discord(update: Update, context: CallbackContext):
+def discord(update: Update, context: CallbackContext, ):
     update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
 
 def off(update: Update, context: CallbackContext):
@@ -314,20 +320,19 @@ def off(update: Update, context: CallbackContext):
 
     global mycursor
     global mydb
-
-    database_connection()
-    mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
-    idInTabella = mycursor.fetchall()
+    
+    idInTabella = ottieniUtentiDaID(id=id)
 
     if len(idInTabella) == 0:
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
         update.message.reply_text(f"Non hai una classe impostata. Se hai provato a disattivare le notifiche non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
+        return
 
-    else:
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
-        mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
-        update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
-        mydb.commit()
+    database_connection()
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
+    mycursor.execute(f'UPDATE utenti SET notifiche_mattina=0 WHERE id=\"{id}\";')
+    update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
+    mydb.commit()
     database_disconnection()
 
 def backupUtenti():
@@ -397,10 +402,13 @@ def main():
 
     dp.add_handler(CommandHandler('discord', discord)) # Discord del pascal
 
-    dp.add_handler(CommandHandler('broadcast', broadcast))
     dp.add_handler(CommandHandler('linkPdf', getLink))
     dp.add_handler(CommandHandler('canale', canale))
 
+    dp.add_handler(CommandHandler('off',off))
+
+    # Comandi admin
+    dp.add_handler(CommandHandler('broadcast', broadcast))
     dp.add_handler(CommandHandler('accendiNotifiche', accendiNotifiche))
     dp.add_handler(CommandHandler('spegniNotifiche', spegniNotifiche))
 
@@ -410,7 +418,6 @@ def main():
     
     dp.add_error_handler(error) # In caso di errore:
     
-    dp.add_handler(CommandHandler('off',off))
     
 
     # TODO: Da sistemare, fa schifo
@@ -459,6 +466,8 @@ def ottieni_utenti() -> list[list[str]]:
 def aggiustaUtenti(utenti):
     utenti_polished: list[list[str]] = []
     
+    # TODO: Cambiare funzionamento database. Non più byte robi ma stringe "True" e "False"
+
     # Converto i bytearray in stringa
     for utente in utenti:
         utente_polished = []
@@ -477,8 +486,8 @@ def ottieniUtentiDaID(id: str | int):
     utenti: list[list[str]] = mycursor.fetchall() # Potrei usare fetch e basta ma meh, meglio copia incolla ormai
     database_disconnection()
 
-    aggiustaUtenti(utenti)
-    return utenti[0]
+    utenti = aggiustaUtenti(utenti)
+    return utenti
 
 # DA QUA IN GIÙ PER CONTROLLO LIVE DELLE VARIAZIONI
 URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
