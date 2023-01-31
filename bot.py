@@ -16,7 +16,9 @@ from bs4 import BeautifulSoup
 import mysql.connector
 import requests
 import schedule
+
 from telegram import Bot, Message, Update, User
+from telegram.error import Unauthorized
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           Filters, MessageHandler, Updater)
 
@@ -116,7 +118,11 @@ def impostaClasse(update: Update, context: CallbackContext):
 def broadcast(update: Update, contex: CallbackContext):
     global mycursor
     
-    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    log(
+        f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}",
+        contex.bot
+        )
+
     if (update.message.from_user['id'] in ADMINS):
         log("Ed ha il permesso",contex.bot)
 
@@ -131,21 +137,17 @@ def broadcast(update: Update, contex: CallbackContext):
 
         for utente in ottieni_utenti():
             id = utente[0]
-            tuttoOk = False
-            while not tuttoOk:
-                try:
-                    contex.bot.send_message(id,update.message.text.replace("/broadcast ","") + f"\n\n~{ADMINS[update.message.from_user['id']]}")
-                    log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
-                    tuttoOk = True
-                except:
-                    tuttoOk = False
+            mandaSeNonBloccato(
+                bot=contex.bot,
+                chat_id=id,
+                text=update.message.text.replace("/broadcast ","") + f"\n\n~{ADMINS[update.message.from_user['id']]}"
+                )
+            log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
         
         log('Ho finito di mandare il messaggio agli utenti',contex.bot)
-
-
     else:
         update.message.reply_text("Non hai il permesso!")
-        log("E non ha il permesso",contex.bot)
+        log("Ma non ha il permesso",contex.bot)
 
 # TODO: Finire di cambiare le chiamate del metodo log() quando posso mettere context.bot
 
@@ -165,17 +167,16 @@ def ClasseImpostata(update: Update, context: CallbackContext):
         return
     
     database_connection()
-    mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
-    idInTabella = mycursor.fetchall()
-
-    if len(idInTabella) == 0:
+# TODO: CONTINUARE DA QUI
+    utenti = ottieniUtentiDaID(id=id)
+    if len(utenti) == 0:
         mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"{messaggio}\");')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{messaggio}\" come classe alle {roboAntiCrashPerEdit.date}")
         roboAntiCrashPerEdit.reply_text(f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come classe. Riceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche e annunci: /off")
     else:
         mycursor.execute(f'UPDATE utenti SET classe=\"{messaggio}\" WHERE id=\"{id}\";')
-        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato classe da {idInTabella[0][2]} a {str(messaggio)}. Data e ora: {roboAntiCrashPerEdit.date}")
-        roboAntiCrashPerEdit.reply_text(f"Avevi già una classe impostata ({idInTabella[0][2]}), l'ho cambiata in {str(messaggio)}.")
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato classe da {utenti[0][2]} a {str(messaggio)}. Data e ora: {roboAntiCrashPerEdit.date}")
+        roboAntiCrashPerEdit.reply_text(f"Avevi già una classe impostata ({utenti[0][2]}), l'ho cambiata in {str(messaggio)}.")
     
     mydb.commit()
     database_disconnection()
@@ -217,20 +218,20 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
     if MANDO:
         global mycursor
 
-        database_connection()
         log(f"Inizio a mandare le variazioni agli utenti")
-        mycursor.execute(f'SELECT id, username, classe FROM utenti')
-    
-        idInTabella = mycursor.fetchall()
-        database_disconnection()
 
-        if len(idInTabella) != 0:    
-            for utente in idInTabella:
+        utenti = ottieni_utenti()
+        if len(utenti) != 0:
+            for utente in utenti:
                 id = utente[0]
-                MandaVariazioni(bot=bot, classe=utente[2], giorno="domani" if giornoPrima else "oggi",chatId=id)
+                classe = utente[2]
+                MandaVariazioni(
+                    bot=bot,
+                    classe=classe, 
+                    giorno=("domani" if giornoPrima else "oggi"),
+                    chatId=id
+                    )
                 log(f"Variazioni di {'domani' if giornoPrima else 'oggi'} mandate a: {utente[1]}")
-
-
 
 def getLink(update: Update, context: CallbackContext):
 
@@ -247,6 +248,7 @@ def getLink(update: Update, context: CallbackContext):
 ALIAS_GIORNI = ["","domani","oggi"]
 
 import time
+
 
 def variazioni(update: Update, context: CallbackContext):
     global mycursor
@@ -291,15 +293,10 @@ def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
         variazioniOrario = f"{variazioniFile.Main(classe,giorno)}"
         variazioniAule = f"{variazioniFile.controllaVariazioniAule(classe,giorno)}"
 
-        tuttoOk = False
-        while not tuttoOk:
-            try:
-                bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
-                if variazioniAule != '':
-                    bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
-                tuttoOk = True
-            except:
-                tuttoOk = False
+        bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
+        if variazioniAule != '':
+            bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
+
     except Exception as e:
         # robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
         try: # Se l'utente ha bloccato il bot esplode tutto
@@ -333,21 +330,18 @@ def off(update: Update, context: CallbackContext):
         mydb.commit()
     database_disconnection()
 
-
 def backupUtenti():
     utenti = ottieni_utenti()
     
-    with open('Roba sensibile/backupUtenti.txt','a') as f:
-        f.write("--------------------------------------\n")
+    with open('Roba sensibile/backupUtenti.txt','w') as f:
         for utente in utenti:
-            f.write(f"{utente[0]} - {utente[1]} - {utente[2]}\n")
+            for i,dato in enumerate(utente):
+                f.write(str(dato) + (" - " if i != len(utente)-1 else "\n"))
 
 def canale(update: Update, context: CallbackContext):
     update.message.reply_text('Canale del bot: https://t.me/+7EexVd-RIoIwZjc0')
 
-
 def spegniNotifiche(update: Update, context: CallbackContext):
-    
     if (not update.message.from_user.id in ADMINS):
         update.message.reply_text("Non hai il permesso!")
         log (f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha il permesso per \"{update.message.text}\" alle {update.message.date}")
@@ -410,12 +404,17 @@ def main():
     dp.add_handler(CommandHandler('accendiNotifiche', accendiNotifiche))
     dp.add_handler(CommandHandler('spegniNotifiche', spegniNotifiche))
 
+    
+
     dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
     
     dp.add_error_handler(error) # In caso di errore:
     
     dp.add_handler(CommandHandler('off',off))
     
+
+    # TODO: Da sistemare, fa schifo
+
     ORARIO_MATTINA = "06:30"
     schedule.every().monday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
     schedule.every().tuesday.at(ORARIO_MATTINA).do(mandaMessaggio,False,dp.bot)
@@ -438,22 +437,48 @@ def main():
 
     Thread(target=schedule_checker).start()
 
-
     Thread(target=check, args=[dp.bot]).start()
-
 
     updater.start_polling(timeout=200)
     updater.idle()
 
-
+def mandaSeNonBloccato(bot: Bot, chat_id: str | int, text: str, parse_mode="Markdown"):
+    try:
+        bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
+    except Unauthorized as e:
+        log(f"L'utente con id \"{chat_id}\" ha bloccato il bot oppure non lo ha mai avviato ({e.message})")
 
 def ottieni_utenti() -> list[list[str]]:
     database_connection()
     mycursor.execute(f'SELECT * FROM utenti;')
     utenti: list[list[str]] = mycursor.fetchall()
     database_disconnection()
+
+    return aggiustaUtenti(utenti)
+
+def aggiustaUtenti(utenti):
+    utenti_polished: list[list[str]] = []
     
-    return utenti
+    # Converto i bytearray in stringa
+    for utente in utenti:
+        utente_polished = []
+        for dato in utente:
+            if not type(dato) == bytearray:
+                utente_polished.append(dato)
+            else:
+                utente_polished.append(bool(dato.decode()))
+        utenti_polished.append(utente_polished)
+
+    return utenti_polished
+
+def ottieniUtentiDaID(id: str | int):
+    database_connection()
+    mycursor.execute(f'SELECT * FROM utenti WHERE id={str(id)}')
+    utenti: list[list[str]] = mycursor.fetchall() # Potrei usare fetch e basta ma meh, meglio copia incolla ormai
+    database_disconnection()
+
+    aggiustaUtenti(utenti)
+    return utenti[0]
 
 # DA QUA IN GIÙ PER CONTROLLO LIVE DELLE VARIAZIONI
 URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
@@ -566,21 +591,20 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 id = utente[0]
 
                 avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
-                try:
+                
+
+                try: # try in caso la lettura del PDF fallisce
                     variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
                 except:
-                    try: # Questo try serve in caso l'utente abbia bloccato il bot
-                        bot.send_message(chat_id=id, text=avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}", parse_mode="Markdown")
-                        log(f"Mandato errore pdf a {utente[1]}")
-                    except: # Ed in quel caso lo salta, ma senza crashare
-                        pass
-                    continue #Salta il resto del codice
+                    mandaSeNonBloccato(bot,chat_id=id, text=avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}", parse_mode="Markdown")
+                    log(f"Mandato errore pdf a {utente[1]}")
+                    continue # Salta il resto del codice
                 
                 variazioniOrarioClasse = variazioniFile.CercaClasse(classe,variazioniOrario)
                 stringa = variazioniFile.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
                 
                 try:
-                    bot.send_message(chat_id=id, text=avviso+stringa, parse_mode="Markdown")            
+                    mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode="Markdown")
                     log(f"Mandate variazioni {classe} a {utente[1]}")
                 except:
                     pass
