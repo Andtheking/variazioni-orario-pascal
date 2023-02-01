@@ -12,21 +12,21 @@ import re
 from threading import Thread
 from time import sleep
 from bs4 import BeautifulSoup
-
 import mysql.connector
 import requests
 import schedule
 
-from telegram import Bot, Message, Update, User
+from telegram import (
+    Bot, Message, Update, User,InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
+    )
 from telegram.error import Unauthorized
+
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
-                          Filters, MessageHandler, Updater)
+                          Filters, MessageHandler, Updater, CallbackQueryHandler)
 
-
-import python_scripts.variazioni.variazioniLive as variazioniLive
 import python_scripts.variazioni.variazioni as variazioniFile
 
-
+# Indici credenziali_database
 # 0 = Host
 # 1 = User
 # 2 = Password
@@ -88,6 +88,9 @@ def database_disconnection():
 	mycursor = None
 
 def log(messaggio: str, bot: Bot = None):
+    messaggio = messaggio.replace("🟢","CERCHIO_VERDE_EMOJI")
+    messaggio = messaggio.replace("🔴", "CERCHIO_ROSSO_EMOJI")
+
     logger.info(messaggio)
     with open('log.txt','a') as f:
         f.write(time.asctime() + " - " + messaggio + "\n")
@@ -101,14 +104,22 @@ def log(messaggio: str, bot: Bot = None):
 def help(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
     
-    update.message.reply_text("""Imposta la tua classe con /impostaClasse;
-Dopo averla impostata, la sera alle 21:00 e la mattina alle 6.30 riceverai una notifica con le variazioni orario del giorno dopo e attuale;
-Visualizza la tua classe con /classe;
-Usa /variazioni <CLASSE> <DD-MM> per avere le variazioni orario di una qualsiasi classe di un qualsiasi giorno.""") 
+    update.message.reply_text(
+        text="Questo bot ti permette di vedere le variazioni orario dell'ITI Pascal.\n\n" +
+        "- Il comando /variazioni che ti fornisce le variazioni (aule e orario) del giorno dopo della classe impostata;\n" +
+        "Se invece non hai impostato una classe, o vuoi vedere una classe diversa dalla tua puoi scrivere semplicemente `/variazioni [CLASSE] [GIORNO-MESE]`.\n\n" +
+        "- Imposta una classe cliccando /impostaClasse (non scrivendo la classe nello stesso messaggio), per poi scrivere la classe nel formato \"1A-5Z\"\n\n" +
+        "Una volta impostata una classe, oltre a non dover specificare nulla nel messaggio /variazioni, riceverai:\n" +
+        "- Notifiche alle 6.30 con le variazioni del giorno e alle 21.00 con quelle del giorno dopo;\n" +
+        "- Notifica all'uscire o alla modifica di un pdf, con le variazioni senza dover aprire il sito\n\n" + 
+        "Se le notifiche ti danno fastidio e vuoi usare solo /variazioni, puoi usare il comando /gestisciNotifiche\n\n"+
+        "*Attenzione!* Una volta impostata la classe con /impostaClasse gli amministratori del bot potranno vedere il tuo ID telegram, il tuo username e la tua classe.",
+        parse_mode="Markdown"
+    ) 
 
 def start(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    update.message.reply_text("Versione 3.0 in prova. Potrebbe non funzionare bene.\nFai /help.")
+    update.message.reply_text("Versione 3.0. Per capire come funziona usa /help.")
 
 def impostaClasse(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
@@ -140,7 +151,8 @@ def broadcast(update: Update, contex: CallbackContext):
             mandaSeNonBloccato(
                 bot=contex.bot,
                 chat_id=id,
-                text=update.message.text.replace("/broadcast ","") + f"\n\n~{ADMINS[update.message.from_user['id']]}"
+                text=update.message.text.replace("/broadcast ","") + f"\n\n~{ADMINS[update.message.from_user['id']]}",
+                parse_mode=ParseMode.HTML
                 )
             log(f"Messaggio inviato a {utente[1]}, {utente[0]}")
         
@@ -166,7 +178,6 @@ def ClasseImpostata(update: Update, context: CallbackContext):
         roboAntiCrashPerEdit.reply_text("Non hai inserito una classe valida (1-5A-Z o 1-5a-z)")
         return
     
-# TODO: CONTINUARE DA QUI
     utenti = ottieniUtentiDaID(id=id)
     
     database_connection()
@@ -202,7 +213,6 @@ def classe(update: Update, context: CallbackContext):
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la sua classe alle {update.message.date}")
         update.message.reply_text(f"Classe attuale: {idInTabella[0][2]}")
 
-
 def error(update: Update, context: CallbackContext):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -215,18 +225,21 @@ def cancel(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
-def mandaMessaggio(giornoPrima: bool, bot: Bot):
+def mandaMessaggio(sera: bool, bot: Bot):
     if MANDO:
         global mycursor
 
         log(f"Inizio a mandare le variazioni agli utenti")
-
+        # 3: NOTIFICHE_MATTINA
+        # 4: NOTIFICHE_SERA
         utenti = ottieni_utenti()
         if len(utenti) != 0:
             for utente in utenti:
-                if (giornoPrima and not utente[4]):
+                if (sera and not utente[4]): # Se è sera, e l'utente ha disabilitato la sera salta il ciclo
+                    log(f"L'utente {utente[1]} ha disabilitato le notifiche serali")
                     continue
-                elif (not giornoPrima and not utente[3]):
+                elif (not sera and not utente[3]): # Se non è sera, e l'utente ha disabilitato la mattina, salta il ciclo
+                    log(f"L'utente {utente[1]} ha disabilitato le notifiche mattutine")
                     continue
 
                 id = utente[0]
@@ -234,10 +247,10 @@ def mandaMessaggio(giornoPrima: bool, bot: Bot):
                 MandaVariazioni(
                     bot=bot,
                     classe=classe, 
-                    giorno=("domani" if giornoPrima else "oggi"),
+                    giorno=("domani" if sera else "oggi"),
                     chatId=id
                     )
-                log(f"Variazioni di {'domani' if giornoPrima else 'oggi'} mandate a: {utente[1]}")
+                log(f"Variazioni di {'domani' if sera else 'oggi'} mandate a: {utente[1]}")
 
 def getLink(update: Update, context: CallbackContext):
 
@@ -277,12 +290,9 @@ def variazioni(update: Update, context: CallbackContext):
     giorno = m.group(3)
 
     if (classe is None):
-        database_connection()
-        mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
-        idInTabella = mycursor.fetchall()
+        idInTabella = ottieniUtentiDaID(id=id)
         classe: str = idInTabella[0][2] if len(idInTabella) > 0 else None
-        database_disconnection()
-    
+        
     if classe is None:
         robaAntiCrashPerEdit.reply_text("Non hai una classe impostata con /impostaclasse, devi specificarla con `/variazioni CLASSE GIORNO-MESE`",parse_mode='Markdown')
         return
@@ -315,25 +325,90 @@ def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
 def discord(update: Update, context: CallbackContext, ):
     update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
 
-def off(update: Update, context: CallbackContext):
-    id = update.message.from_user.id
+def gestisciNotifiche(update: Update, context: CallbackContext):
+    robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
+    id = robaAntiCrashPerEdit.from_user.id
+    log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
 
     global mycursor
     global mydb
     
-    idInTabella = ottieniUtentiDaID(id=id)
+    utenti = ottieniUtentiDaID(id=id)
 
-    if len(idInTabella) == 0:
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
-        update.message.reply_text(f"Non hai una classe impostata. Se hai provato a disattivare le notifiche non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
+    if len(utenti) == 0:
+        log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} non ha una classe. ({robaAntiCrashPerEdit.text}) Data e ora: {robaAntiCrashPerEdit.date}")
+        robaAntiCrashPerEdit.reply_text(f"Non hai una classe impostata. Se hai provato a disattivare le notifiche non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
         return
+    utente = utenti[0]
+
+    
+    keyboard = ottieniTastieraNotifiche(utente=utente)
+    robaAntiCrashPerEdit.reply_text("Ecco le impostazioni notifiche",reply_markup=InlineKeyboardMarkup(keyboard))
+
+
+
+
+
+    # database_connection()
+    # log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
+    # mycursor.execute(f'UPDATE utenti SET notifiche_mattina=0 WHERE id=\"{id}\";')
+    # update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
+    # mydb.commit()
+    # database_disconnection()
+
+def ottieniTastieraNotifiche(utente) -> list[list[InlineKeyboardButton]]:
+    opzioni_notifiche = {
+        "mattina":"🔴" if not utente[3] else "🟢",
+        "sera":"🔴" if not utente[4] else "🟢",
+        "live":"🔴" if not utente[5] else "🟢"
+    }
+
+    keyboard = [
+        [ # Riga 1
+            InlineKeyboardButton(text="Notifiche mattina " + opzioni_notifiche["mattina"], callback_data='mattina'),
+            InlineKeyboardButton(text="Notifiche sera " + opzioni_notifiche["sera"], callback_data='sera')
+        ],
+        [ # Riga 2
+            InlineKeyboardButton(text="Notifiche live " + opzioni_notifiche["live"], callback_data='live'),
+        ]
+    ]
+    return keyboard
+
+def bottoneNotificaPremuto(update: Update, context: CallbackContext):
+    global mydb
+    global mycursor
+    
+    query = update.callback_query
+    tipo_notifica = update.callback_query.data
+
+    
+
+    utenti = ottieniUtentiDaID(update.callback_query.from_user.id)
+    utente = utenti[0]
+
+    risposta = ""
 
     database_connection()
-    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
-    mycursor.execute(f'UPDATE utenti SET notifiche_mattina=0 WHERE id=\"{id}\";')
-    update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
+    if tipo_notifica == "mattina":
+        mycursor.execute(f'UPDATE utenti SET notifiche_mattina = \"{str(not utente[3])}\" WHERE id=\"{utente[0]}\";')
+        risposta = "Notifiche mattina " + ('accese.' if not utente[3] else 'spente.')
+    elif tipo_notifica == "sera":
+        mycursor.execute(f'UPDATE utenti SET notifiche_sera = \"{str(not utente[4])}\" WHERE id=\"{utente[0]}\";')
+        risposta = "Notifiche sera " + ('accese.' if not utente[4] else 'spente.')
+    elif tipo_notifica == "live":
+        mycursor.execute(f'UPDATE utenti SET notifiche_live = \"{str(not utente[5])}\" WHERE id=\"{utente[0]}\";')
+        risposta = "Notifiche live " + ('accese.' if not utente[5] else 'spente.')
     mydb.commit()
     database_disconnection()
+
+    utente = ottieniUtentiDaID(update.callback_query.from_user.id)[0]
+    query.message.edit_reply_markup(
+        reply_markup=InlineKeyboardMarkup(
+            ottieniTastieraNotifiche(utente=utente)
+        )
+    )
+    query.answer(risposta)
+    log(f"{utente[1]}, {utente[0]} ha cambiato le sue notifiche: {risposta}")
 
 def backupUtenti():
     utenti = ottieni_utenti()
@@ -405,7 +480,8 @@ def main():
     dp.add_handler(CommandHandler('linkPdf', getLink))
     dp.add_handler(CommandHandler('canale', canale))
 
-    dp.add_handler(CommandHandler('off',off))
+    dp.add_handler(CommandHandler('gestisciNotifiche',gestisciNotifiche))
+    dp.add_handler(CallbackQueryHandler(bottoneNotificaPremuto))
 
     # Comandi admin
     dp.add_handler(CommandHandler('broadcast', broadcast))
@@ -465,22 +541,37 @@ def ottieni_utenti() -> list[list[str]]:
 
 def aggiustaUtenti(utenti):
     utenti_polished: list[list[str]] = []
-    
-    # TODO: Cambiare funzionamento database. Non più byte robi ma stringe "True" e "False"
 
-    # Converto i bytearray in stringa
+    # Converto le stringe in booleani
     for utente in utenti:
         utente_polished = []
         for dato in utente:
-            if not type(dato) == bytearray:
-                utente_polished.append(dato)
+            if (dato == 'True'):
+                utente_polished.append(True)
+            elif (dato == 'False'):
+                utente_polished.append(False)
             else:
-                utente_polished.append(bool(dato.decode()))
+                utente_polished.append(dato)
         utenti_polished.append(utente_polished)
 
     return utenti_polished
 
 def ottieniUtentiDaID(id: str | int):
+    '''
+    Ritorna una lista tipo\n
+    [
+            
+        [
+            [0] ID_UTENTE,\n
+            [1] USERNAME,\n
+            [2] CLASSE,\n
+            [3] NOTIFICHE_MATTINA,\n
+            [4] NOTIFICHE_SERA, \n
+            [5] NOTIFICHE_LIVE,\n
+        ]
+    ]
+    '''
+
     database_connection()
     mycursor.execute(f'SELECT * FROM utenti WHERE id={str(id)}')
     utenti: list[list[str]] = mycursor.fetchall() # Potrei usare fetch e basta ma meh, meglio copia incolla ormai
@@ -537,7 +628,7 @@ def getGiorno(url: str):
     url = url[url.rindex('/')+1:]
     test = url.split('-')
     del test[0:3]
-    giorno = test[0] + "-" + convertiMese(test[1].lower())
+    giorno = (test[0] if len(test[0]) > 1 else '0'+test[0]) + "-" + convertiMese(test[1].lower())
     return giorno
 
 def convertiMese(mese: str):
@@ -598,6 +689,11 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
             for utente in ottieni_utenti():
                 classe = utente[2]
                 id = utente[0]
+
+                if (utente[5]):
+                    log(f"L'utente {utente[2]} ha disabilitato le notifiche live")
+                    return
+
 
                 avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
                 
