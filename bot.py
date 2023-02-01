@@ -711,8 +711,8 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 id = utente[0]
 
                 if (utente[5]):
-                    log(f"L'utente {utente[2]} ha disabilitato le notifiche live")
-                    return
+                    log(f"L'utente {utente[1]} ha disabilitato le notifiche live")
+                    continue
 
 
                 avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
