@@ -710,7 +710,7 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 classe = utente[2]
                 id = utente[0]
 
-                if (utente[5]):
+                if (not utente[5]):
                     log(f"L'utente {utente[1]} ha disabilitato le notifiche live")
                     continue
 
