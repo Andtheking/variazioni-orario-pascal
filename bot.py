@@ -19,7 +19,7 @@ import schedule
 from telegram import (
     Bot, Message, Update, User,InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
     )
-from telegram.error import Unauthorized
+from telegram.error import Unauthorized, BadRequest
 
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           Filters, MessageHandler, Updater, CallbackQueryHandler)
@@ -546,10 +546,14 @@ def main():
     updater.idle()
 
 def mandaSeNonBloccato(bot: Bot, chat_id, text: str, parse_mode="Markdown"):
+    # FIXME: Se l'utente non esiste implode
+    
     try:
         bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
     except Unauthorized as e:
         log(f"L'utente con id \"{chat_id}\" ha bloccato il bot oppure non lo ha mai avviato ({e.message})")
+    except BadRequest as e:
+        pass
 
 def ottieni_utenti() -> list[list[str]]:
     database_connection()
@@ -706,6 +710,15 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 for k in sent_pdfs:
                     f.write(k + ' - ')
 
+            errore = False
+            try: # try in caso la lettura del PDF fallisce
+                variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
+            except:
+                errore = True
+                messaggioErrore = avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}"
+            
+            avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
+
             for utente in ottieni_utenti():
                 classe = utente[2]
                 id = utente[0]
@@ -713,18 +726,12 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 if (not utente[5]):
                     log(f"L'utente {utente[1]} ha disabilitato le notifiche live")
                     continue
-
-
-                avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
                 
-
-                try: # try in caso la lettura del PDF fallisce
-                    variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
-                except:
-                    mandaSeNonBloccato(bot,chat_id=id, text=avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}", parse_mode="Markdown")
+                if errore:
+                    mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode="Markdown")
                     log(f"Mandato errore pdf a {utente[1]}")
-                    continue # Salta il resto del codice
-                
+                    continue
+
                 variazioniOrarioClasse = variazioniFile.CercaClasse(classe,variazioniOrario)
                 stringa = variazioniFile.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
                 
