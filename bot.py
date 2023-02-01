@@ -446,6 +446,25 @@ def accendiNotifiche(update: Update, context: CallbackContext):
     MANDO = True
     update.message.reply_text("Notifiche accese per tutti gli utenti")
 
+def cancellami(update: Update, context: CallbackContext):
+    id = update.message.from_user.id
+
+    global mycursor
+
+    utenti = ottieniUtentiDaID(id)
+
+    if len(utenti) == 0:
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
+        update.message.reply_text(f"Non hai una classe impostata. Se hai provato a cancellarti non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
+
+    else:
+        database_connection()
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database alle {update.message.date}")
+        mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
+        update.message.reply_text('Cancellato con successo dalla lista utenti del bot. Non riceverai più notifiche e per re-iscriverti dovrai rifare il comando /impostaClasse. (Le notifiche torneranno tutte attive)')
+        mydb.commit()
+        database_disconnection()
+
 def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -482,6 +501,7 @@ def main():
 
     dp.add_handler(CommandHandler('gestisciNotifiche',gestisciNotifiche))
     dp.add_handler(CallbackQueryHandler(bottoneNotificaPremuto))
+    dp.add_handler(CommandHandler('cancellami', cancellami))
 
     # Comandi admin
     dp.add_handler(CommandHandler('broadcast', broadcast))
