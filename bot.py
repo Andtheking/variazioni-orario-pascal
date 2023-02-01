@@ -545,7 +545,7 @@ def main():
     updater.start_polling(timeout=200)
     updater.idle()
 
-def mandaSeNonBloccato(bot: Bot, chat_id: str | int, text: str, parse_mode="Markdown"):
+def mandaSeNonBloccato(bot: Bot, chat_id, text: str, parse_mode="Markdown"):
     try:
         bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
     except Unauthorized as e:
@@ -576,7 +576,7 @@ def aggiustaUtenti(utenti):
 
     return utenti_polished
 
-def ottieniUtentiDaID(id: str | int):
+def ottieniUtentiDaID(id):
     '''
     Ritorna una lista tipo\n
     [
