@@ -515,6 +515,8 @@ def main():
     dp.add_handler(CommandHandler('accendiNotifiche', accendiNotifiche))
     dp.add_handler(CommandHandler('spegniNotifiche', spegniNotifiche))
 
+    dp.add_handler(CommandHandler('log',send_logs))
+    dp.add_handler(CommandHandler('listaUtenti',get_users))
     
 
     dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
@@ -759,6 +761,39 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                     log(f"Mandate variazioni {classe} a {utente[1]}")
                 except:
                     pass
+
+def send_logs(update: Update, context: CallbackContext):
+    
+    id = update.message.from_user.id
+    if id in ADMINS:
+        with open("log.txt","rb") as f:
+            update.message.reply_document(document=f,filename="log.txt")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha preso i log alle {update.message.date}")
+    else:
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha provato ad accedere ai log alle {update.message.date}")
+
+def get_users(update: Update, context: CallbackContext):
+    id = update.message.from_user.id
+    if id in ADMINS:
+        lista_utenti = ""
+        
+        test = "all" in update.message.text
+        
+        lista_utenti += "```\n" if test else ""
+        
+        for utente in ottieni_utenti():
+            lista_utenti += "`" if not test else ""
+            for i,dato in enumerate(utente):
+                lista_utenti += str(dato) + (" - " if i != len(utente)-1 else "")
+            lista_utenti += "`\n" if not test else "\n"
+        
+        lista_utenti += "\n```" if test else ""
+
+        update.message.reply_text(lista_utenti, parse_mode=ParseMode.MARKDOWN)
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto tutti gli utenti alle {update.message.date}")
+    else:
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha provato a vedere tutti gli utenti alle {update.message.date}")
+
 
 if __name__ == '__main__':
     main()
