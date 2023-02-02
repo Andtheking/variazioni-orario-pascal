@@ -175,15 +175,13 @@ Note: `{docente.note}`\n\n"""
     return f"Variazioni orario della `{classe}` per il `{giorno}`\n\n{stringa}"
 
 
-def controllaVariazioniAule(classe: str, giorno: str):
-    soup = BeautifulSoup(requests.get(URL).content, "html.parser")
-
+def controllaVariazioniAuleClasse(classe: str, giorno: str, lista = None):
     giorno = formattaGiorno(giorno)
     giorno = giorno.split('-')
     daCercare = f"{giorno[0]} {convertiMese(giorno[1]).lower()}"
-
-    lista: list[bs4.Tag] = soup.select(
-        "p > span", attrs={"style": "color: #ff0000"})
+    
+    if lista is None:
+        lista = leggiTutteVariazioniAule()
     # print(lista)
 
     sheesh: list[bs4.Tag] = []
@@ -224,6 +222,13 @@ def controllaVariazioniAule(classe: str, giorno: str):
 
     return daReturnare.replace(r"\xa","")
 
+def leggiTutteVariazioniAule():
+    soup = BeautifulSoup(requests.get(URL).content, "html.parser")
+    lista: list[bs4.Tag] = soup.select(
+        "p > span", attrs={"style": "color: #ff0000"})
+        
+    return lista
+
 def formattaGiorno(giorno):
 
     if giorno == "domani" or giorno == "":
@@ -247,4 +252,4 @@ def CancellaCartellaPdf():
 if __name__ == "__main__":
     #print(Main("4I"))
     while True:
-        print(controllaVariazioniAule(input("Classe -> "), input("Data (31-12) -> ")))
+        print(controllaVariazioniAuleClasse(input("Classe -> "), input("Data (31-12) -> ")))

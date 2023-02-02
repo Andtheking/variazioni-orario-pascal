@@ -592,6 +592,7 @@ def ottieniUtentiDaID(id):
             [3] NOTIFICHE_MATTINA,\n
             [4] NOTIFICHE_SERA, \n
             [5] NOTIFICHE_LIVE,\n
+            [6] NOTIFICHE_NESSUNAVAR\n
         ]
     ]
     '''
@@ -676,6 +677,8 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
 
     links = soup.find_all('a')
 
+    variazioniAule = variazioniFile.leggiTutteVariazioniAule()
+
     for link in links: # Controlla tutti i link nella pagina
         if ('.pdf' in link.get('href', [])): # Se è un pdf
             pdfName = link.get('href',[])[link.get('href',[]).rindex("/")+1:]
@@ -727,6 +730,7 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                     log(f"L'utente {utente[1]} ha disabilitato le notifiche live")
                     continue
                 
+
                 if errore:
                     mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode="Markdown")
                     log(f"Mandato errore pdf a {utente[1]}")
@@ -735,8 +739,16 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 variazioniOrarioClasse = variazioniFile.CercaClasse(classe,variazioniOrario)
                 stringa = variazioniFile.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
                 
+                variazioniAuleClasse = variazioniFile.controllaVariazioniAuleClasse(classe,giorno,variazioniAule)
+
+                if (not utente[6] and "Nessuna" in stringa):
+                    log(f"L'utente {utente[1]} ha disabilitato le notifiche live con nessuna variazione")
+                    continue
+                
                 try:
                     mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode="Markdown")
+                    if variazioniAuleClasse != "":
+                        mandaSeNonBloccato(bot,chat_id=id, text=variazioniAuleClasse)
                     log(f"Mandate variazioni {classe} a {utente[1]}")
                 except:
                     pass
