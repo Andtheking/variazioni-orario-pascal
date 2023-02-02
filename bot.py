@@ -544,7 +544,7 @@ def main():
     # Niente sabato perché darebbe per domenica
     schedule.every().sunday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
 
-    schedule.every().day.at("00:00").do(variazioniFile.CancellaCartellaPdf) # TODO: Da riguardare, causa errore alla mattina
+    # schedule.every().day.at("00:00").do(variazioniFile.CancellaCartellaPdf) # FIXME: Causa errore alla mattina
     schedule.every().day.at("00:00").do(backupUtenti)
 
     Thread(target=schedule_checker).start()
@@ -555,8 +555,6 @@ def main():
     updater.idle()
 
 def mandaSeNonBloccato(bot: Bot, chat_id, text: str, parse_mode="Markdown"):
-    # FIXME: Se l'utente non esiste implode
-    
     try:
         bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
     except Unauthorized as e:
