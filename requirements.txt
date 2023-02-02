@@ -1,9 +1,7 @@
-beautifulsoup4==4.11.1
+beautifulsoup4==4.11.2
 mysql_connector_repackaged==0.3.1
-pandas==1.4.1
-PyPDF2==2.11.0
+numpy==1.22.3
+PyPDF2==3.0.1
 requests==2.27.1
 schedule==1.1.0
-tabula==1.0.5
-tabula_py==2.5.1
 telegram==0.0.1
