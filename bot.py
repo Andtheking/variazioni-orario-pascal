@@ -307,7 +307,7 @@ def variazioni(update: Update, context: CallbackContext):
 def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
     try:
         variazioniOrario = f"{variazioniFile.Main(classe,giorno)}"
-        variazioniAule = f"{variazioniFile.controllaVariazioniAule(classe,giorno)}"
+        variazioniAule = f"{variazioniFile.controllaVariazioniAuleClasse(classe,giorno)}"
 
         bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
         if variazioniAule != '':
@@ -360,7 +360,8 @@ def ottieniTastieraNotifiche(utente) -> list[list[InlineKeyboardButton]]:
     opzioni_notifiche = {
         "mattina":"🔴" if not utente[3] else "🟢",
         "sera":"🔴" if not utente[4] else "🟢",
-        "live":"🔴" if not utente[5] else "🟢"
+        "live":"🔴" if not utente[5] else "🟢",
+        "nessunaVar":"🔴" if not utente[6] else "🟢",
     }
 
     keyboard = [
@@ -370,6 +371,9 @@ def ottieniTastieraNotifiche(utente) -> list[list[InlineKeyboardButton]]:
         ],
         [ # Riga 2
             InlineKeyboardButton(text="Notifiche live " + opzioni_notifiche["live"], callback_data='live'),
+        ],
+        [ # Riga 3
+            InlineKeyboardButton(text="Notifiche con nessuna variazione " + opzioni_notifiche["nessunaVar"], callback_data='nessunaVar'),
         ]
     ]
     return keyboard
@@ -398,6 +402,9 @@ def bottoneNotificaPremuto(update: Update, context: CallbackContext):
     elif tipo_notifica == "live":
         mycursor.execute(f'UPDATE utenti SET notifiche_live = \"{str(not utente[5])}\" WHERE id=\"{utente[0]}\";')
         risposta = "Notifiche live " + ('accese.' if not utente[5] else 'spente.')
+    elif tipo_notifica == "nessunaVar":
+        mycursor.execute(f'UPDATE utenti SET notifiche_nessunaVar = \"{str(not utente[6])}\" WHERE id=\"{utente[0]}\";')
+        risposta = "Notifiche con nessuna variazione " + ('accese.' if not utente[6] else 'spente.')
     mydb.commit()
     database_disconnection()
 
