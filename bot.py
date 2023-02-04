@@ -104,7 +104,7 @@ def log(messaggio: str, bot: Bot = None):
         
 def help(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    
+    # TODO: Scrivere parte professori nell'help
     update.message.reply_text(
         text="Questo bot ti permette di vedere le variazioni orario dell'ITI Pascal.\n\n" +
         "- Il comando /variazioni che ti fornisce le variazioni (aule e orario) del giorno dopo della classe impostata;\n" +
@@ -264,17 +264,20 @@ def mandaMessaggio(sera: bool, bot: Bot):
                     )
                 log(f"Variazioni di {'domani' if sera else 'oggi'} mandate a: {utente[1]}")
 
+rFormatoData = re.compile(r"(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(?:0[1-9]|[1-9])|1[0-2])\b"+days+")")
 def getLink(update: Update, context: CallbackContext):
 
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
     
     log(f"{update.message.from_user.name}, {update.message.from_user.id} ha fatto {robaAntiCrashPerEdit.text}")
 
-    dati = robaAntiCrashPerEdit.text.lower().replace('/linkpdf ', '')
+    giorno = robaAntiCrashPerEdit.text.lower().replace('/linkpdf', '').strip()
 
-    datiList = dati.strip().split(" ")
-    robaAntiCrashPerEdit.reply_text(variazioniFile.Main(datiList[0].upper().strip(),giorno = datiList[1].strip() if len(datiList) > 1 else "",onlyLink=True))
-
+    m = rFormatoData.match(giorno)
+    robaAntiCrashPerEdit.reply_text(
+        "\n\nTrovato un altro PDF con la stessa data:\n\n".join(variazioniFile.ottieniLinkPdf(giorno if m else "domani")),
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 ALIAS_GIORNI = ["","domani","oggi"]
 
@@ -315,7 +318,7 @@ def variazioni(update: Update, context: CallbackContext):
             prof = True
             daCercare = utente[8]
         elif utente[7] == 'studente':
-            daCercare = utente[1]
+            daCercare = utente[2]
 
     giorno = m.group(3)
     giorno = "domani" if giorno is None else giorno
@@ -325,41 +328,6 @@ def variazioni(update: Update, context: CallbackContext):
         MandaVariazioni(context.bot, daCercare.upper(), giorno, id)
     else:
         MandaVariazioni(context.bot, daCercare.strip().title(), giorno, id, prof=True)
-            
-# def variazioniProf (update:Update, context:CallbackContext):
-#     global mycursor
-#     global rVarProf
-    
-#     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
-#     messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioniProf COGNOME N. [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
-    
-#     id = robaAntiCrashPerEdit.from_user['id']
-
-#     log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
-    
-#     m = rVarProf.match(robaAntiCrashPerEdit.text.lower()) # deve matchare questo: https://regex101.com/r/fCC5e3/1
-
-#     if not m:
-#         robaAntiCrashPerEdit.reply_text(messaggioNonValido)
-#         return
-
-#     prof = m.group(2)
-#     giorno = m.group(3)
-
-#     if (prof is None):
-#         utenti = ottieniUtentiDaID(id=id)
-#         prof: str = utenti[0][7] if len(utenti) > 0 else None
-        
-#     if prof is None:
-#         robaAntiCrashPerEdit.reply_text("Non hai un prof impostato con /impostaprof, devi specificarlo con `/variazioni COGNOME N. GIORNO-MESE`",parse_mode='Markdown')
-#         return
-    
-#     giorno = "domani" if giorno is None else giorno
-    
-#     id = robaAntiCrashPerEdit.from_user.id
-    
-#     MandaVariazioni(context.bot, prof.strip(), giorno, id, prof=True)
-
 
 
 def MandaVariazioni(bot: Bot, daCercare: str, giorno: str, chatId: int, prof=False):
@@ -370,7 +338,7 @@ def MandaVariazioni(bot: Bot, daCercare: str, giorno: str, chatId: int, prof=Fal
         if not prof:
             variazioniAule = f"{variazioniFile.controllaVariazioniAuleClasse(daCercare,giorno)}"
 
-        bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
+        bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown',disable_web_page_preview=True)
         if variazioniAule != '':
             bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
 
@@ -535,6 +503,7 @@ def cancellami(update: Update, context: CallbackContext):
 
 def cambia_modalita(update: Update, context: CallbackContext):
     id = update.message.from_user.id
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
 
     utenti = ottieniUtentiDaID(id)
 
@@ -562,22 +531,23 @@ def cambia_modalita(update: Update, context: CallbackContext):
     update.message.reply_text(text=messaggio)
 
 def impostaProf(update: Update, context: CallbackContext):
-    roboAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
-    id = roboAntiCrashPerEdit.from_user.id
+    robaAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
+    log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
+    id = robaAntiCrashPerEdit.from_user.id
 
-    profScelto = roboAntiCrashPerEdit.text.lower().replace("/impostaprof","").strip().title()
+    profScelto = robaAntiCrashPerEdit.text.lower().replace("/impostaprof","").strip().title()
     
     if len(profScelto) <= 2:
-        roboAntiCrashPerEdit.reply_text("Nome prof non valido, almeno 3 caratteri.")
+        robaAntiCrashPerEdit.reply_text("Nome prof non valido, almeno 3 caratteri.")
         return
     
     utenti = ottieniUtentiDaID(id)
 
     if len(utenti) == 0: 
         database_connection()
-        mycursor.execute(f"INSERT INTO utenti (id,username,modalita,prof) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"prof\",\"{profScelto}\")")
+        mycursor.execute(f"INSERT INTO utenti (id,username,modalita,prof) VALUES (\"{id}\",\"{robaAntiCrashPerEdit.from_user.name}\",\"prof\",\"{profScelto}\")")
         mydb.commit()
-        roboAntiCrashPerEdit.reply_text(f"Aggiunto in modalità professore con prof impostato a: {profScelto}")
+        robaAntiCrashPerEdit.reply_text(f"Aggiunto in modalità professore con prof impostato a: {profScelto}")
         database_disconnection()
         return
 
@@ -585,7 +555,7 @@ def impostaProf(update: Update, context: CallbackContext):
     mod = utente[7]
 
     if (mod != 'prof'):
-        roboAntiCrashPerEdit.reply_text("Non sei in modalità prof.")
+        robaAntiCrashPerEdit.reply_text("Non sei in modalità prof.")
         return
 
     profAttuale = utente[8]
@@ -602,7 +572,7 @@ def impostaProf(update: Update, context: CallbackContext):
     database_disconnection()
 
 
-    roboAntiCrashPerEdit.reply_text(text=messaggio)
+    robaAntiCrashPerEdit.reply_text(text=messaggio)
 
 def main():
     updater = Updater(TOKEN, use_context=True)

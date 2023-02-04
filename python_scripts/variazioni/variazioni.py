@@ -26,7 +26,7 @@ semaforo = threading.Semaphore()
 sent_pdfs: dict[str, datetime.datetime] = {}
 
 
-def ottieniLinkPdf(dataSelezionata: str) -> str:
+def ottieniLinkPdf(dataSelezionata: str) -> list[str]:
     """
     Ottieni il link del pdf dal sito del Pascal
     
@@ -37,6 +37,8 @@ def ottieniLinkPdf(dataSelezionata: str) -> str:
         (str) percorso pdf scaricato o errore
     """
 
+    dataSelezionata = formattaGiorno(dataSelezionata)
+
     data = dataSelezionata.split('-')
 
     soup = BeautifulSoup(requests.get(URL).content,
@@ -44,11 +46,12 @@ def ottieniLinkPdf(dataSelezionata: str) -> str:
 
     listaPdf: list[str] = [a['href'] for a in soup if "pdf" in a['href']]
 
-    link = ""
+    link = []
     for linkPdf in listaPdf:
         if (f"-{data[0]}-" in linkPdf.lower() or f"-{data[0][1:]}-" in linkPdf.lower()) and f"{convertiMese(data[1]).lower()}" in linkPdf.lower():
-            link = linkPdf
-    if (link == ""):
+            link.append(linkPdf)
+    
+    if (link == []):
         return None
 
     return link
@@ -90,47 +93,57 @@ def CercaSostituto(sostituto: str, docentiAssenti: list[DocenteAssente]) -> list
 REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>[1-5][A-Z])\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
 
 
-def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False, prof=False) -> str:
+def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False, prof=False) -> list[str]:
     giorno = formattaGiorno(giorno)
 
     if (onlyLink):
         l = ottieniLinkPdf(giorno)
-        return l if l != None else f"Non è stata pubblicata una variazione orario per il `{giorno}`"
+        if l != None:
+            return "\n\n".join(l)
+        else:
+            f"Non è stata pubblicata nessuna variazione orario per il `{giorno}`"
 
     linkPdf = ottieniLinkPdf(giorno)
 
     if linkPdf == None:
-        return f"Non è stata pubblicata una variazione orario per il `{giorno}`"
+        return f"Non è stata pubblicata nessuna variazione orario per il `{giorno}`"
 
-    percorsoPdf = f'pdfScaricati/{linkPdf[linkPdf.rindex("/")+1:]}'
+    variazioni = []
+    for link in linkPdf:
+        percorsiPdf = f'pdfScaricati/{link[link.rindex("/")+1:]}'
 
-    semaforo.acquire()
-    try:
-        docentiAssenti = LeggiPdf(percorsoPdf)
-    except:
+        semaforo.acquire()
+        try:
+            docentiAssenti = LeggiPdf(percorsiPdf)
+        except:
+            semaforo.release()
+            variazioni.append(f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link}")
+            continue
         semaforo.release()
-        return f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{linkPdf}"
-    semaforo.release()
-    
-    if (not prof):
-        variazioni = FormattaOutput(
-            CercaClasse(
-                daCercare, docentiAssenti
-            ), 
-            giorno=giorno, 
-            classeOProf=daCercare
+        
+        if (not prof):
+            variazioni.append(
+                FormattaOutput(
+                    CercaClasse(
+                        daCercare, docentiAssenti
+                    ), 
+                    giorno=giorno, 
+                    classeOProf=daCercare
+                )
             )
-    else:
-        daCercare = daCercare.title()
-        variazioni = FormattaOutput(
-            CercaSostituto(
-                sostituto=daCercare,
-                docentiAssenti=docentiAssenti
-            ),
-            giorno=giorno,
-            classeOProf=daCercare
-        )
-    return variazioni
+        else:
+            daCercare = daCercare.title()
+            variazioni.append(
+                FormattaOutput(
+                    CercaSostituto(
+                        sostituto=daCercare,
+                        docentiAssenti=docentiAssenti
+                    ),
+                giorno=giorno,
+                classeOProf=daCercare
+                )
+            )
+    return "Trovato un altro PDF con la stessa data:\n".join(variazioni)
 
 def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
     docentiAssenti: list[DocenteAssente] = []
@@ -186,7 +199,7 @@ def FormattaOutput(variazioniOrario: list[DocenteAssente], giorno: str, classeOP
         prof = True
 
     if variazioniOrario == None or variazioniOrario == []:
-        return f"Nessuna variazione orario per {'la' if not prof else 'il/la prof'} `{classeOProf}` il `{giorno}`"
+        return f"Nessuna variazione orario per {'la' if not prof else 'il/la prof'} `{classeOProf}` il `{giorno}`\n\n"
 
     stringa = ""
 
@@ -276,6 +289,4 @@ def CancellaCartellaPdf():
 
 if __name__ == "__main__":
     #print(Main("4I"))
-    Main
-    while True:
-        print(controllaVariazioniAuleClasse(input("Classe -> "), input("Data (31-12) -> ")))
+    print(Main("4I","06-02"))
