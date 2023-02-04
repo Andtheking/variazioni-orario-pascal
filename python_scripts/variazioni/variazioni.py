@@ -67,7 +67,7 @@ def convertiMese(n: str):
             "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
     return mesi[int(n)-1].capitalize()
 
-def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente]) -> str:
+def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente]) -> list[DocenteAssente]:
 
     variazioniClasse = []
 
@@ -77,11 +77,20 @@ def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente]) -> str:
 
     return variazioniClasse
 
+def CercaSostituto(sostituto: str, docentiAssenti: list[DocenteAssente]) -> list[DocenteAssente]:
+
+    variazioniClasse = []
+
+    for docente in docentiAssenti:
+        if sostituto in docente.sostituti:
+            variazioniClasse.append(docente)
+
+    return variazioniClasse
 
 REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>[1-5][A-Z])\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
 
 
-def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False) -> str:
+def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False, prof=False) -> str:
     giorno = formattaGiorno(giorno)
 
     if (onlyLink):
@@ -100,12 +109,27 @@ def Main(classeDaCercare: str, giorno: str = (datetime.datetime.now()+datetime.t
         docentiAssenti = LeggiPdf(percorsoPdf)
     except:
         semaforo.release()
-        return f"Qualcosa è andato storto nella lettura del pdf del giorno 30-01.\n\nEcco il link:\n{linkPdf}"
+        return f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{linkPdf}"
     semaforo.release()
     
-    
-    variazioni = FormattaOutput(CercaClasse(
-        classeDaCercare, docentiAssenti), giorno=giorno, classe=classeDaCercare)
+    if (not prof):
+        variazioni = FormattaOutput(
+            CercaClasse(
+                daCercare, docentiAssenti
+            ), 
+            giorno=giorno, 
+            classeOProf=daCercare
+            )
+    else:
+        daCercare = daCercare.title()
+        variazioni = FormattaOutput(
+            CercaSostituto(
+                sostituto=daCercare,
+                docentiAssenti=docentiAssenti
+            ),
+            giorno=giorno,
+            classeOProf=daCercare
+        )
     return variazioni
 
 def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
@@ -156,10 +180,13 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
     return docentiAssenti
 
 
-def FormattaOutput(variazioniOrario: list[DocenteAssente], giorno: str, classe: str):
+def FormattaOutput(variazioniOrario: list[DocenteAssente], giorno: str, classeOProf: str):
+    prof = False
+    if len(classeOProf) != 2:
+        prof = True
 
     if variazioniOrario == None or variazioniOrario == []:
-        return f"Nessuna variazione orario per la `{classe}` il `{giorno}`"
+        return f"Nessuna variazione orario per {'la' if not prof else 'il/la prof'} `{classeOProf}` il `{giorno}`"
 
     stringa = ""
 
@@ -172,7 +199,7 @@ Sostituito da: `{docente.sostituti.replace(' | ', ' e ')}`
 Note: `{docente.note}`\n\n"""
         )
 
-    return f"Variazioni orario della `{classe}` per il `{giorno}`\n\n{stringa}"
+    return f"Variazioni orario per {'la' if not prof else 'il/la prof'} `{classeOProf}` per il `{giorno}`\n\n{stringa}"
 
 
 def controllaVariazioniAuleClasse(classe: str, giorno: str, lista = None):
@@ -241,15 +268,14 @@ def formattaGiorno(giorno):
     giorno = ('0' + giorno.split('-')[0] if not len(giorno.split('-')[0]) == 2 else giorno.split('-')[
               0]) + '-' + ('0' + giorno.split('-')[1] if not len(giorno.split('-')[1]) == 2 else giorno.split('-')[1])
     return giorno
-
-
+        
 def CancellaCartellaPdf():
     filelist = [f for f in os.listdir("pdfScaricati/")]
     for f in filelist:
         os.remove(os.path.join("pdfScaricati/", f))
 
-
 if __name__ == "__main__":
     #print(Main("4I"))
+    Main
     while True:
         print(controllaVariazioniAuleClasse(input("Classe -> "), input("Data (31-12) -> ")))

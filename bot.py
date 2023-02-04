@@ -62,7 +62,8 @@ days = "|oggi|domani"
 
 
 #https://regex101.com/r/5s6yUW/1
-rVar = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
+rVarClasse = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
+rVarProf = re.compile(r"(/variazioni) ?(\D+?\D+?)? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(?:0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
 
 rImp = re.compile(r"^[1-5](?:[a-z]|[A-Z])$")
 
@@ -123,7 +124,18 @@ def start(update: Update, context: CallbackContext):
 
 def impostaClasse(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    id = update.message.from_user.id
+
+    utenti = ottieniUtentiDaID(id)
+
+    if (len(utenti) > 0):   
+        utente = utenti[0]
+        if utente[7] != 'studente':
+            update.message.reply_text("Devi essere in modalità studente. /modalita")
+            return
+    
     update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
+    update.message.reply_text("<b>Attenzione!</b> una volta impostata la classe gli admin del bot potranno vedere:\n- ID utente\n- Username o nome\n- Classe\n- Preferenze notifiche\n- Modalità studente o prof\n- Prof selezionato",parse_mode=ParseMode.HTML)
     return CLASSE
 
 def broadcast(update: Update, contex: CallbackContext):
@@ -246,7 +258,7 @@ def mandaMessaggio(sera: bool, bot: Bot):
                 classe = utente[2]
                 MandaVariazioni(
                     bot=bot,
-                    classe=classe, 
+                    daCercare=classe, 
                     giorno=("domani" if sera else "oggi"),
                     chatId=id
                     )
@@ -271,43 +283,92 @@ import time
 
 def variazioni(update: Update, context: CallbackContext):
     global mycursor
-    global rVar
+    global rVarClasse
+    global rVarProf
     
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
-    messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioni 3A [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
+    messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioni [3A o Cognome N.] [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
     
     id = robaAntiCrashPerEdit.from_user['id']
 
     log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
     
-    m = rVar.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
-
+    m = rVarClasse.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
+    
+    prof = False
     if not m:
-        robaAntiCrashPerEdit.reply_text(messaggioNonValido)
-        return
+        m = rVarProf.match(robaAntiCrashPerEdit.text.lower())
+        prof = True
+        if not m:
+            robaAntiCrashPerEdit.reply_text(messaggioNonValido)
+            return
 
-    classe = m.group(2)
+    daCercare = m.group(2)
+
+    if daCercare is None:
+        utenti = ottieniUtentiDaID(id)
+        if len(utenti) == 0:
+            robaAntiCrashPerEdit.reply_text("Devi specificare per forza un prof o una classe se non sei registrato (`/variazioni [CLASSE o COGNOME. N.] [GIORNO]`)",parse_mode=ParseMode.MARKDOWN)
+            return
+        utente = utenti[0]
+        if utente[7] == 'prof':
+            prof = True
+            daCercare = utente[8]
+        elif utente[7] == 'studente':
+            daCercare = utente[1]
+
     giorno = m.group(3)
-
-    if (classe is None):
-        idInTabella = ottieniUtentiDaID(id=id)
-        classe: str = idInTabella[0][2] if len(idInTabella) > 0 else None
-        
-    if classe is None:
-        robaAntiCrashPerEdit.reply_text("Non hai una classe impostata con /impostaclasse, devi specificarla con `/variazioni CLASSE GIORNO-MESE`",parse_mode='Markdown')
-        return
-    
     giorno = "domani" if giorno is None else giorno
-    
     id = robaAntiCrashPerEdit.from_user.id
+
+    if not prof:
+        MandaVariazioni(context.bot, daCercare.upper(), giorno, id)
+    else:
+        MandaVariazioni(context.bot, daCercare.strip().title(), giorno, id, prof=True)
+            
+# def variazioniProf (update:Update, context:CallbackContext):
+#     global mycursor
+#     global rVarProf
     
-    MandaVariazioni(context.bot, classe.upper(), giorno, id)
+#     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
+#     messaggioNonValido = 'Messaggio non valido. Il formato è: /variazioniProf COGNOME N. [GIORNO-MESE] (giorno e mese a numero, domani se omessi)'
+    
+#     id = robaAntiCrashPerEdit.from_user['id']
+
+#     log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
+    
+#     m = rVarProf.match(robaAntiCrashPerEdit.text.lower()) # deve matchare questo: https://regex101.com/r/fCC5e3/1
+
+#     if not m:
+#         robaAntiCrashPerEdit.reply_text(messaggioNonValido)
+#         return
+
+#     prof = m.group(2)
+#     giorno = m.group(3)
+
+#     if (prof is None):
+#         utenti = ottieniUtentiDaID(id=id)
+#         prof: str = utenti[0][7] if len(utenti) > 0 else None
+        
+#     if prof is None:
+#         robaAntiCrashPerEdit.reply_text("Non hai un prof impostato con /impostaprof, devi specificarlo con `/variazioni COGNOME N. GIORNO-MESE`",parse_mode='Markdown')
+#         return
+    
+#     giorno = "domani" if giorno is None else giorno
+    
+#     id = robaAntiCrashPerEdit.from_user.id
+    
+#     MandaVariazioni(context.bot, prof.strip(), giorno, id, prof=True)
 
 
-def MandaVariazioni(bot: Bot, classe: str, giorno: str, chatId: int):
+
+def MandaVariazioni(bot: Bot, daCercare: str, giorno: str, chatId: int, prof=False):
     try:
-        variazioniOrario = f"{variazioniFile.Main(classe,giorno)}"
-        variazioniAule = f"{variazioniFile.controllaVariazioniAuleClasse(classe,giorno)}"
+        variazioniOrario = f"{variazioniFile.Main(daCercare,giorno,prof=prof)}"
+        
+        variazioniAule = ""
+        if not prof:
+            variazioniAule = f"{variazioniFile.controllaVariazioniAuleClasse(daCercare,giorno)}"
 
         bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown')
         if variazioniAule != '':
@@ -461,16 +522,87 @@ def cancellami(update: Update, context: CallbackContext):
     utenti = ottieniUtentiDaID(id)
 
     if len(utenti) == 0:
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
         update.message.reply_text(f"Non hai una classe impostata. Se hai provato a cancellarti non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
 
     else:
         database_connection()
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database alle {update.message.date}")
         mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
-        update.message.reply_text('Cancellato con successo dalla lista utenti del bot. Non riceverai più notifiche e per re-iscriverti dovrai rifare il comando /impostaClasse. (Le notifiche torneranno tutte attive)')
         mydb.commit()
+        update.message.reply_text('Cancellato con successo dalla lista utenti del bot. Non riceverai più notifiche e per re-iscriverti dovrai rifare il comando /impostaClasse. (Le notifiche torneranno tutte attive)')
+        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database alle {update.message.date}")
         database_disconnection()
+
+def cambia_modalita(update: Update, context: CallbackContext):
+    id = update.message.from_user.id
+
+    utenti = ottieniUtentiDaID(id)
+
+    if len(utenti) == 0: 
+        update.message.reply_text("Non sei registrato. /impostaClasse")
+        return
+
+    utente = utenti[0]
+    
+    mod = utente[7]
+
+    messaggio = ""
+
+    database_connection()
+    if mod == 'studente':
+        mycursor.execute(f'UPDATE utenti SET modalita=\"prof\" WHERE id=\"{id}\";')
+        mydb.commit()
+        messaggio = "Modalità cambiata in prof. Ora riceverai le notifiche in base ai sostituti e non alle classi"
+    elif mod == 'prof':
+        mycursor.execute(f'UPDATE utenti SET modalita=\"studente\" WHERE id=\"{id}\";')
+        mydb.commit()
+        messaggio = "Modalità cambiata in studente. Ora riceverai le notifiche in base alle classi e non ai sostituti"
+    database_disconnection()
+    
+    update.message.reply_text(text=messaggio)
+
+def impostaProf(update: Update, context: CallbackContext):
+    roboAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
+    id = roboAntiCrashPerEdit.from_user.id
+
+    profScelto = roboAntiCrashPerEdit.text.lower().replace("/impostaprof","").strip().title()
+    
+    if len(profScelto) <= 2:
+        roboAntiCrashPerEdit.reply_text("Nome prof non valido, almeno 3 caratteri.")
+        return
+    
+    utenti = ottieniUtentiDaID(id)
+
+    if len(utenti) == 0: 
+        database_connection()
+        mycursor.execute(f"INSERT INTO utenti (id,username,modalita,prof) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"prof\",\"{profScelto}\")")
+        mydb.commit()
+        roboAntiCrashPerEdit.reply_text(f"Aggiunto in modalità professore con prof impostato a: {profScelto}")
+        database_disconnection()
+        return
+
+    utente = utenti[0]
+    mod = utente[7]
+
+    if (mod != 'prof'):
+        roboAntiCrashPerEdit.reply_text("Non sei in modalità prof.")
+        return
+
+    profAttuale = utente[8]
+
+    database_connection()
+    if (profAttuale == "N/A"):
+        mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
+        mydb.commit()
+        messaggio = f"Non avevi un prof impostato, imposto: {profScelto}; (Deve essere solo il cognome)"
+    else:
+        mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
+        mydb.commit()
+        messaggio = f"Avevi già impostato: {profAttuale}, imposto: {profScelto}; (Deve essere solo il cognome)"
+    database_disconnection()
+
+
+    roboAntiCrashPerEdit.reply_text(text=messaggio)
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -510,6 +642,10 @@ def main():
     dp.add_handler(CallbackQueryHandler(bottoneNotificaPremuto))
     dp.add_handler(CommandHandler('cancellami', cancellami))
 
+    dp.add_handler(CommandHandler("modalita", cambia_modalita))
+    dp.add_handler(CommandHandler("impostaProf", impostaProf))
+    # dp.add_handler(CommandHandler("variazioniProf",variazioniProf))
+
     # Comandi admin
     dp.add_handler(CommandHandler('broadcast', broadcast))
     dp.add_handler(CommandHandler('accendiNotifiche', accendiNotifiche))
@@ -544,12 +680,12 @@ def main():
     # Niente sabato perché darebbe per domenica
     schedule.every().sunday.at(ORARIO_SERA).do(mandaMessaggio,True,dp.bot)
 
-    # schedule.every().day.at("00:00").do(variazioniFile.CancellaCartellaPdf) # FIXME: Causa errore alla mattina
+    schedule.every().day.at("07:00").do(variazioniFile.CancellaCartellaPdf)
     schedule.every().day.at("00:00").do(backupUtenti)
 
-    Thread(target=schedule_checker).start()
-
     Thread(target=check, args=[dp.bot]).start()
+
+    Thread(target=schedule_checker).start()
 
     updater.start_polling(timeout=200)
     updater.idle()
@@ -563,6 +699,23 @@ def mandaSeNonBloccato(bot: Bot, chat_id, text: str, parse_mode="Markdown"):
         pass
 
 def ottieni_utenti() -> list[list[str]]:
+    '''
+    Ritorna una lista tipo\n
+    [
+            
+        [
+            [0] ID_UTENTE,\n
+            [1] USERNAME,\n
+            [2] CLASSE,\n
+            [3] NOTIFICHE_MATTINA,\n
+            [4] NOTIFICHE_SERA, \n
+            [5] NOTIFICHE_LIVE,\n
+            [6] NOTIFICHE_NESSUNAVAR\n
+            [7] MODALITA (DEFAULT STUDENTE)\n
+            [8] PROF (DEFAULT N/A)\n
+        ]
+    ]
+    '''
     database_connection()
     mycursor.execute(f'SELECT * FROM utenti;')
     utenti: list[list[str]] = mycursor.fetchall()
@@ -600,6 +753,8 @@ def ottieniUtentiDaID(id):
             [4] NOTIFICHE_SERA, \n
             [5] NOTIFICHE_LIVE,\n
             [6] NOTIFICHE_NESSUNAVAR\n
+            [7] MODALITA (DEFAULT STUDENTE)\n
+            [8] PROF (DEFAULT N/A)\n
         ]
     ]
     '''
@@ -731,6 +886,10 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
 
             for utente in ottieni_utenti():
                 classe = utente[2]
+                modalita = utente[7].lower()
+                sostituto = utente[8]
+                
+
                 id = utente[0]
 
                 if (not utente[5]):
@@ -742,11 +901,18 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                     mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode="Markdown")
                     log(f"Mandato errore pdf a {utente[1]}")
                     continue
-
-                variazioniOrarioClasse = variazioniFile.CercaClasse(classe,variazioniOrario)
-                stringa = variazioniFile.FormattaOutput(variazioniOrarioClasse,giorno=giorno,classe=classe)
                 
-                variazioniAuleClasse = variazioniFile.controllaVariazioniAuleClasse(classe,giorno,variazioniAule)
+                variazioniOrarioDaMandare = []
+                stringa = ""
+                if (modalita == "studente"):
+                    variazioniOrarioDaMandare = variazioniFile.CercaClasse(classe,variazioniOrario)
+                    variazioniAuleClasse = variazioniFile.controllaVariazioniAuleClasse(classe,giorno,variazioniAule)
+                    stringa = variazioniFile.FormattaOutput(variazioniOrarioDaMandare,giorno=giorno,classeOProf=classe)
+                elif (modalita == "prof"):
+                    variazioniOrarioDaMandare = variazioniFile.CercaSostituto(sostituto=sostituto, docentiAssenti=variazioniOrario)
+                    stringa = variazioniFile.FormattaOutput(variazioniOrarioDaMandare,giorno,sostituto)
+
+                
 
                 if (not utente[6] and "Nessuna" in stringa):
                     log(f"L'utente {utente[1]} ha disabilitato le notifiche live con nessuna variazione")
