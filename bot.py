@@ -129,17 +129,58 @@ def impostaClasse(update: Update, context: CallbackContext):
     id = update.message.from_user.id
 
     utenti = ottieniUtentiDaID(id)
-
     if (len(utenti) > 0):   
         utente = utenti[0]
         if utente[7] != 'studente':
             update.message.reply_text("Devi essere in modalità studente. /modalita")
-            return
+            return ConversationHandler.END
     
-    update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
-    if len(utenti) == 0:
-        update.message.reply_text("<b>Attenzione!</b> una volta impostata la classe gli admin del bot potranno vedere:\n- ID utente\n- Username o nome\n- Classe\n- Preferenze notifiche\n- Modalità studente o prof\n- Prof selezionato",parse_mode=ParseMode.HTML)
-    return CLASSE
+    classeDaImpostare = update.message.text.lower().replace("/impostaclasse","").strip().upper()
+    if classeDaImpostare == "":
+        update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
+        if len(utenti) == 0:
+            update.message.reply_text("<b>Attenzione!</b> una volta impostata la classe gli admin del bot potranno vedere:\n- ID utente\n- Username o nome\n- Classe\n- Preferenze notifiche\n- Modalità studente o prof\n- Prof selezionato",parse_mode=ParseMode.HTML)
+        return CLASSE
+
+    global rImp
+    m = rImp.match(classeDaImpostare)
+
+    if not m:
+        update.message.reply_text("Non hai inserito una classe valida (1-5A-Z o 1-5a-z)")
+        return ConversationHandler.END
+    
+    if len(utenti) == 0: 
+        database_connection()
+        mycursor.execute(f"INSERT INTO utenti (id,username,classe,modalita) VALUES (\"{id}\",\"{update.message.from_user.name}\",\"{classeDaImpostare}\",\"studente\")")
+        mydb.commit()
+        update.message.reply_text(f"Aggiunto in modalità studente con classe impostata a: {classeDaImpostare}")
+        database_disconnection()
+        return ConversationHandler.END
+
+    utente = utenti[0]
+    mod = utente[7]
+
+    if (mod != 'studente'):
+        update.message.reply_text("Non sei in modalità studente. /modalita")
+        return ConversationHandler.END
+
+    classeAttuale = utente[2]
+
+    database_connection()
+    if (classeAttuale is None):
+        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+        messaggio = f"Non avevi una classe impostata, imposto la: `{classeDaImpostare}`;"
+    else:
+        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+        messaggio = f"Avevi già impostato: `{classeAttuale}`, imposto: `{classeDaImpostare}`;"
+    mydb.commit()
+    database_disconnection()
+
+
+    update.message.reply_text(text=messaggio, parse_mode=ParseMode.MARKDOWN)
+
+
+    
 
 def broadcast(update: Update, contex: CallbackContext):
     global mycursor
@@ -217,28 +258,35 @@ def ClasseImpostata(update: Update, context: CallbackContext):
 
     id = update.message.from_user.id
     roboAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
-    messaggio = str(roboAntiCrashPerEdit.text).upper()
+    classeDaImpostare = str(roboAntiCrashPerEdit.text).upper()
     
-    m = rImp.match(messaggio)
+    m = rImp.match(classeDaImpostare)
 
     if not m:
         roboAntiCrashPerEdit.reply_text("Non hai inserito una classe valida (1-5A-Z o 1-5a-z)")
-        return
+        return 
     
     utenti = ottieniUtentiDaID(id=id)
-    
+    classeAttuale = utenti[0][2]
+    risposta = ""
     database_connection()
     if len(utenti) == 0:
-        mycursor.execute(f'INSERT utenti (id, username, classe) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"{messaggio}\");')
-        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{messaggio}\" come classe alle {roboAntiCrashPerEdit.date}")
-        roboAntiCrashPerEdit.reply_text(f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come classe. Riceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche e annunci: /off")
+        mycursor.execute(f'INSERT utenti (id, username, classe, modalita) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"{classeDaImpostare}\",\"studente\");')
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{classeDaImpostare}\" come classe alle {roboAntiCrashPerEdit.date}")
+        risposta = f"Hai impostato la classe `{classeDaImpostare}`.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+    elif utenti[0][2] is not None:
+        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
+        risposta = f"Avevi già una classe impostata (`{classeAttuale}`). Ho impostato la classe `{classeDaImpostare}`.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     else:
-        mycursor.execute(f'UPDATE utenti SET classe=\"{messaggio}\" WHERE id=\"{id}\";')
-        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato classe da {utenti[0][2]} a {str(messaggio)}. Data e ora: {roboAntiCrashPerEdit.date}")
-        roboAntiCrashPerEdit.reply_text(f"Avevi già una classe impostata ({utenti[0][2]}), l'ho cambiata in {str(messaggio)}.")
-    
+        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
+        risposta = f"Hai impostato la classe \"{roboAntiCrashPerEdit.text}\".\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+        
     mydb.commit()
     database_disconnection()
+
+    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.MARKDOWN)
 
     return ConversationHandler.END
 
@@ -290,15 +338,27 @@ def mandaMessaggio(sera: bool, bot: Bot):
                 elif (not sera and not utente[3]): # Se non è sera, e l'utente ha disabilitato la mattina, salta il ciclo
                     log(f"L'utente {utente[1]} ha disabilitato le notifiche mattutine")
                     continue
-
+                prof = False
+                if utente[7] == 'prof':
+                    prof = True
+                
                 id = utente[0]
                 classe = utente[2]
-                MandaVariazioni(
-                    bot=bot,
-                    daCercare=classe, 
-                    giorno=("domani" if sera else "oggi"),
-                    chatId=id
-                    )
+                sostituto = utente[8]
+                if prof:
+                    MandaVariazioni(
+                        bot=bot,
+                        daCercare=sostituto, 
+                        giorno=("domani" if sera else "oggi"),
+                        chatId=id,
+                        prof=prof)
+                else:
+                    MandaVariazioni(
+                        bot=bot,
+                        daCercare=classe, 
+                        giorno=("domani" if sera else "oggi"),
+                        chatId=id
+                        )
                 log(f"Variazioni di {'domani' if sera else 'oggi'} mandate a: {utente[1]}")
 
 rFormatoData = re.compile(r"(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(?:0[1-9]|[1-9])|1[0-2])\b"+days+")")
@@ -867,89 +927,88 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
     variazioniAule = variazioniFile.leggiTutteVariazioniAule()
 
     for link in links: # Controlla tutti i link nella pagina
-        if ('.pdf' in link.get('href', [])): # Se è un pdf
-            pdfName = link.get('href',[])[link.get('href',[]).rindex("/")+1:]
-            log("Downloading file: " + f"\"{pdfName}\"")
-            
-            Ok = False # Questo ciclo serve in caso esplode mentre fa la richiesta (Forse non necessario)
-            while not Ok:
-                try:
-                    response = requests.get(link.get('href')) # Fa una richiesta al link e lo scarica
-                    Ok = True
-                except:
-                    Ok = False
-                
-            pdfPath = "pdfScaricati/" + pdfName
-            giorno = getGiorno(response.url)
-            
-            # Scrivi il contenuto del pdf scaricato in un file
-            with open(pdfPath, 'wb') as pdf:
-                pdf.write(response.content) 
+        if ('.pdf' not in link.get('href', [])): # Se è un pdf
+            continue
 
-            pdf_hash = get_pdf_hash(pdfPath) # Prendo l'hash per riconoscere il pdf in modo da non inviarlo ancora
-                                             # Al prossimo cambiamento del sito. 
+        pdfName = link.get('href',[])[link.get('href',[]).rindex("/")+1:]
+        log("Downloading file: " + f"\"{pdfName}\"")
+        
+        response = requests.get(link.get('href')) # Fa una richiesta al link e lo scarica
             
-            global sent_pdfs
+        pdfPath = "pdfScaricati/" + pdfName
+        giorno = getGiorno(response.url)
+        
+        # Scrivi il contenuto del pdf scaricato in un file
+        with open(pdfPath, 'wb') as pdf:
+            pdf.write(response.content) 
+
+        pdf_hash = get_pdf_hash(pdfPath) # Prendo l'hash per riconoscere il pdf in modo da non inviarlo ancora
+                                         # al prossimo cambiamento del sito. 
+        
+        global sent_pdfs
+        
+        if pdf_hash in sent_pdfs: # Se il pdf è già stato inviato si ferma e passa al prossimo link
+            continue
+        
+        sent_pdfs.append(pdf_hash)
+
+        with open("sent_pdfs.txt","w") as f: # Salvataggio su file per poter riavviare il bot con tranquillità
+            for k in sent_pdfs:
+                f.write(k + ' - ')
+
+        errore = False
+        avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
+        
+        try: # try in caso la lettura del PDF fallisce
+            variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
+        except:
+            errore = True
+            messaggioErrore = avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}"
+        
+
+        for utente in ottieni_utenti():
+            classe = utente[2]
+            modalita = utente[7].lower()
+            sostituto = utente[8]
             
-            if pdf_hash in sent_pdfs: # Se il pdf e gia stato inviato si ferma e passa al prossimo link
+
+            id = utente[0]
+
+            if (not utente[5]):
+                log(f"L'utente {utente[1]} ha disabilitato le notifiche live")
                 continue
             
-            sent_pdfs.append(pdf_hash)
 
-            with open("sent_pdfs.txt","w") as f: # Salvataggio su file per poter riavviare il bot con tranquillità
-                for k in sent_pdfs:
-                    f.write(k + ' - ')
-
-            errore = False
-            try: # try in caso la lettura del PDF fallisce
-                variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
-            except:
-                errore = True
-                messaggioErrore = avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}"
+            if errore:
+                mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode="Markdown")
+                log(f"Mandato errore pdf a {utente[1]}")
+                continue
             
-            avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
+            variazioniOrarioDaMandare = []
+            stringa = ""
+            if (modalita == "studente"):
+                variazioniOrarioDaMandare = variazioniFile.CercaClasse(classe,variazioniOrario)
+                variazioniAuleClasse = variazioniFile.controllaVariazioniAuleClasse(classe,giorno,variazioniAule)
+                stringa = variazioniFile.FormattaOutput(variazioniOrarioDaMandare,giorno=giorno,classeOProf=classe)
+            elif (modalita == "prof"):
+                if sostituto == "N/A":
+                    continue                    
+                variazioniOrarioDaMandare = variazioniFile.CercaSostituto(sostituto=sostituto, docentiAssenti=variazioniOrario)
+                stringa = variazioniFile.FormattaOutput(variazioniOrarioDaMandare,giorno,sostituto)
 
-            for utente in ottieni_utenti():
-                classe = utente[2]
-                modalita = utente[7].lower()
-                sostituto = utente[8]
-                
+            
 
-                id = utente[0]
-
-                if (not utente[5]):
-                    log(f"L'utente {utente[1]} ha disabilitato le notifiche live")
-                    continue
-                
-
-                if errore:
-                    mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode="Markdown")
-                    log(f"Mandato errore pdf a {utente[1]}")
-                    continue
-                
-                variazioniOrarioDaMandare = []
-                stringa = ""
-                if (modalita == "studente"):
-                    variazioniOrarioDaMandare = variazioniFile.CercaClasse(classe,variazioniOrario)
-                    variazioniAuleClasse = variazioniFile.controllaVariazioniAuleClasse(classe,giorno,variazioniAule)
-                    stringa = variazioniFile.FormattaOutput(variazioniOrarioDaMandare,giorno=giorno,classeOProf=classe)
-                elif (modalita == "prof"):
-                    variazioniOrarioDaMandare = variazioniFile.CercaSostituto(sostituto=sostituto, docentiAssenti=variazioniOrario)
-                    stringa = variazioniFile.FormattaOutput(variazioniOrarioDaMandare,giorno,sostituto)
-
-                
-
-                if (not utente[6] and "Nessuna" in stringa):
-                    log(f"L'utente {utente[1]} ha disabilitato le notifiche live con nessuna variazione")
-                    continue
-                
-                try:
-                    mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode="Markdown")
-                    if variazioniAuleClasse != "":
-                        mandaSeNonBloccato(bot,chat_id=id, text=variazioniAuleClasse)
-                    log(f"Mandate variazioni {classe} a {utente[1]}")
-                except:
-                    pass
+            if (not utente[6] and "Nessuna" in stringa):
+                log(f"L'utente {utente[1]} ha disabilitato le notifiche live con nessuna variazione")
+                continue
+            
+            try:
+                mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode="Markdown")
+                if variazioniAuleClasse != "":
+                    mandaSeNonBloccato(bot,chat_id=id, text=variazioniAuleClasse)
+                log(f"Mandate variazioni {classe} a {utente[1]}")
+            except:
+                pass
 
 def send_logs(update: Update, context: CallbackContext):
     
