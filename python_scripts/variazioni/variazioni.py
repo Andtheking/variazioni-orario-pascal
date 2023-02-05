@@ -229,6 +229,7 @@ def controllaVariazioniAuleClasse(classe: str, giorno: str, lista = None):
         temp = daCercare in item.text or ((' '+ daCercare[1:]) if daCercare[0] == '0' else daCercare) in item.text
         if temp:
             sheesh = list(item.next_elements)
+            break
 
     test2 = []
     for a in sheesh:
@@ -236,10 +237,12 @@ def controllaVariazioniAuleClasse(classe: str, giorno: str, lista = None):
         if a.name == 'span' and (("ff0000" in a.attrs['style']) if 'style' in a.attrs else False):
             break
 
+    if test2 == []:
+        return ""
+
     test3 = []
 
     for b in test2:
-
         if '' in b:
             test3.append(b)
 
@@ -289,4 +292,4 @@ def CancellaCartellaPdf():
 
 if __name__ == "__main__":
     #print(Main("4I"))
-    print(Main("4I","06-02"))
+    print(controllaVariazioniAuleClasse("4I","05-02"))

@@ -38,6 +38,8 @@ with open("Roba sensibile/database.txt","r") as file:
 # PORT = int(os.environ.get('PORT','8443'))
 
 CLASSE = 0
+PROF = 0
+
 ID_TELEGRAM_AND = "245996916"
 
 ADMINS: dict[int,str] = {
@@ -135,7 +137,8 @@ def impostaClasse(update: Update, context: CallbackContext):
             return
     
     update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
-    update.message.reply_text("<b>Attenzione!</b> una volta impostata la classe gli admin del bot potranno vedere:\n- ID utente\n- Username o nome\n- Classe\n- Preferenze notifiche\n- Modalità studente o prof\n- Prof selezionato",parse_mode=ParseMode.HTML)
+    if len(utenti) == 0:
+        update.message.reply_text("<b>Attenzione!</b> una volta impostata la classe gli admin del bot potranno vedere:\n- ID utente\n- Username o nome\n- Classe\n- Preferenze notifiche\n- Modalità studente o prof\n- Prof selezionato",parse_mode=ParseMode.HTML)
     return CLASSE
 
 def broadcast(update: Update, contex: CallbackContext):
@@ -173,8 +176,40 @@ def broadcast(update: Update, contex: CallbackContext):
         update.message.reply_text("Non hai il permesso!")
         log("Ma non ha il permesso",contex.bot)
 
-# TODO: Finire di cambiare le chiamate del metodo log() quando posso mettere context.bot
+def ProfImpostato(update: Update, context: CallbackContext):
+    id = update.message.from_user.id
+    roboAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
+    messaggio = str(roboAntiCrashPerEdit.text).title()
 
+
+    if len(messaggio) <= 2:
+        update.message.reply_text("Nome prof non valido, almeno 3 caratteri.")
+        return
+
+    utenti = ottieniUtentiDaID(id=id)
+    
+    database_connection()
+    risposta = ""
+    if len(utenti) == 0:
+        mycursor.execute(f'INSERT utenti (id, username, modalita, prof) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"prof\",\"{messaggio}\");')
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{messaggio}\" come prof alle {roboAntiCrashPerEdit.date}")
+        risposta = f"Hai impostato `{roboAntiCrashPerEdit.text}` come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+    elif utenti[0][8] != "N/A":
+        mycursor.execute(f'UPDATE utenti SET prof=\"{messaggio}\" WHERE id=\"{id}\";')
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
+        risposta = f"Avevi già un prof impostato (`{utenti[0][8]}`). Ho impostato `{messaggio}` come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+    else:
+        mycursor.execute(f'UPDATE utenti SET prof=\"{messaggio}\" WHERE id=\"{id}\";')
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
+        messaggio = f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+    
+    mydb.commit()
+    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.MARKDOWN)
+
+    database_disconnection()
+    
+
+# TODO: Finire di cambiare le chiamate del metodo log() quando posso mettere context.bot
 def ClasseImpostata(update: Update, context: CallbackContext):
     global mycursor
     global mydb
@@ -221,9 +256,11 @@ def classe(update: Update, context: CallbackContext):
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({messaggio}) Data e ora: {update.message.date}")
         update.message.reply_text(f"Non hai una classe impostata. Impostala con /impostaClasse")
 
-    else:
+    elif idInTabella[0][2] != "None":
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto la sua classe alle {update.message.date}")
         update.message.reply_text(f"Classe attuale: {idInTabella[0][2]}")
+    else:
+        update.message.reply_text(f"Non hai una classe impostata")
 
 def error(update: Update, context: CallbackContext):
     """Log Errors caused by Updates."""
@@ -232,11 +269,11 @@ def error(update: Update, context: CallbackContext):
     log(f'Update "{update}" caused error "{context.error}')
 
 def cancel(update: Update, context: CallbackContext):
-    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione della classe alle {update.message.date}")
+    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha cancellato l'impostazione classe o prof alle {update.message.date}")
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
 
-
+# TODO Versione prof da fare
 def mandaMessaggio(sera: bool, bot: Bot):
     if MANDO:
         global mycursor
@@ -319,6 +356,9 @@ def variazioni(update: Update, context: CallbackContext):
             daCercare = utente[8]
         elif utente[7] == 'studente':
             daCercare = utente[2]
+            if daCercare is None:
+                robaAntiCrashPerEdit.reply_text("Non hai una classe impostata, impostala con /impostaClasse oppure usa il comando intero (`/variazioni [CLASSE o COGNOME. N.] [GIORNO]`)",parse_mode=ParseMode.MARKDOWN)
+                return
 
     giorno = m.group(3)
     giorno = "domani" if giorno is None else giorno
@@ -537,11 +577,18 @@ def impostaProf(update: Update, context: CallbackContext):
 
     profScelto = robaAntiCrashPerEdit.text.lower().replace("/impostaprof","").strip().title()
     
-    if len(profScelto) <= 2:
-        robaAntiCrashPerEdit.reply_text("Nome prof non valido, almeno 3 caratteri.")
-        return
-    
     utenti = ottieniUtentiDaID(id)
+    
+    if len(profScelto)== 0:
+        update.message.reply_text("Mandami il prof nel formato \"Cognome N.\" oppure annulla con /cancel (È a tua discrezione scrivere un prof valido.)")
+        if len(utenti) == 0:
+            update.message.reply_text("<b>Attenzione!</b> una volta impostata la classe gli admin del bot potranno vedere:\n- ID utente\n- Username o nome\n- Classe\n- Preferenze notifiche\n- Modalità studente o prof\n- Prof selezionato",parse_mode=ParseMode.HTML)
+        return PROF
+
+    elif len(profScelto) <= 2:
+        robaAntiCrashPerEdit.reply_text("Nome prof non valido, almeno 3 caratteri.")
+        return ConversationHandler.END
+
 
     if len(utenti) == 0: 
         database_connection()
@@ -549,14 +596,14 @@ def impostaProf(update: Update, context: CallbackContext):
         mydb.commit()
         robaAntiCrashPerEdit.reply_text(f"Aggiunto in modalità professore con prof impostato a: {profScelto}")
         database_disconnection()
-        return
+        return ConversationHandler.END
 
     utente = utenti[0]
     mod = utente[7]
 
     if (mod != 'prof'):
         robaAntiCrashPerEdit.reply_text("Non sei in modalità prof.")
-        return
+        return ConversationHandler.END
 
     profAttuale = utente[8]
 
@@ -564,15 +611,15 @@ def impostaProf(update: Update, context: CallbackContext):
     if (profAttuale == "N/A"):
         mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
         mydb.commit()
-        messaggio = f"Non avevi un prof impostato, imposto: {profScelto}; (Deve essere solo il cognome)"
+        messaggio = f"Non avevi un prof impostato, imposto: `{profScelto}`; (Deve essere nel formato Cognome N.)"
     else:
         mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
         mydb.commit()
-        messaggio = f"Avevi già impostato: {profAttuale}, imposto: {profScelto}; (Deve essere solo il cognome)"
+        messaggio = f"Avevi già impostato: `{profAttuale}`, imposto: `{profScelto}`; (Deve essere solo il cognome)"
     database_disconnection()
 
 
-    robaAntiCrashPerEdit.reply_text(text=messaggio)
+    robaAntiCrashPerEdit.reply_text(text=messaggio, parse_mode=ParseMode.MARKDOWN)
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -588,6 +635,7 @@ def main():
         open("sent_pdfs.txt","w").close()
         sent_pdfs = []
     
+    # TODO: impostaClasse e impostaProf devono avere stesso formato, e devono anche poter essere scritti in un unico messaggio oltre a quello a capo
     imposta_classe = ConversationHandler(
         entry_points=[CommandHandler("impostaClasse", impostaClasse)],
         states={
@@ -595,6 +643,15 @@ def main():
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
+
+    imposta_prof = ConversationHandler(
+        entry_points=[CommandHandler("impostaProf", impostaProf)],
+        states={
+            CLASSE: [MessageHandler(Filters.text & ~ Filters.command, ProfImpostato)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+    # dp.add_handler(CommandHandler("impostaProf", impostaProf))
     
     dp.add_handler(CommandHandler("start", start)) 
     dp.add_handler(CommandHandler("help", help)) # Aiuto su come si usa il bot
@@ -613,7 +670,6 @@ def main():
     dp.add_handler(CommandHandler('cancellami', cancellami))
 
     dp.add_handler(CommandHandler("modalita", cambia_modalita))
-    dp.add_handler(CommandHandler("impostaProf", impostaProf))
     # dp.add_handler(CommandHandler("variazioniProf",variazioniProf))
 
     # Comandi admin
@@ -626,10 +682,9 @@ def main():
     
 
     dp.add_handler(imposta_classe) # Comando per impostare la classe per le notifiche
-    
-    dp.add_error_handler(error) # In caso di errore:
-    
-    
+    dp.add_handler(imposta_prof)
+
+    dp.add_error_handler(error) # In caso di errore
 
     # TODO: Da sistemare, fa schifo
 
