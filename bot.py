@@ -111,8 +111,8 @@ def help(update: Update, context: CallbackContext):
         text="Questo bot ti permette di vedere le variazioni orario dell'ITI Pascal. (Sia per prof sia per studenti!)\n\n" +
         "- Il comando /variazioni che ti fornisce le variazioni (aule e orario) del giorno dopo che riguardano la classe o il prof impostato;\n" +
         "Se invece non hai impostato nulla, o vuoi vedere prof o classe diversa dalla tua puoi scrivere semplicemente `/variazioni [CLASSE o Cognome N.] [GIORNO-MESE]`.\n\n" +
-        "- Imposta una classe cliccando /impostaClasse (o scrivendo la classe nello stesso messaggio tipo `/impostaClasse 4I`), per poi scrivere la classe nel formato \"1A-5Z\"\n\n" +
-        "- Imposta un prof cliccando /impostaProf (o scrivendo il Cognome N. del prof tipo `/impostaProf Spirito F.`). *Attenzione* il bot non controlla se ciò che scrivi come prof sia giusto, se sbagli a scrivere riceverai semplicemente il messaggio \"Nessuna variazione per XXXX\""
+        "- Imposta una classe cliccando /impostaClasse (o scrivendo la classe nello stesso messaggio tipo `/impostaClasse 4I`), per poi scrivere la classe nel formato \"1A-5Z\"" +
+        "- Imposta un prof cliccando /impostaProf (o scrivendo il Cognome N. del prof tipo `/impostaProf Spirito F.`). *Attenzione* il bot non controlla se ciò che scrivi come prof sia giusto, se sbagli a scrivere riceverai semplicemente il messaggio \"Nessuna variazione per XXXX\"\n\n"
         "Una volta impostata una classe (o prof), oltre a non dover specificare nulla nel messaggio /variazioni, riceverai:\n" +
         "- Notifiche alle 6.30 con le variazioni del giorno e alle 21.00 con quelle del giorno dopo;\n" +
         "- Notifica all'uscire o alla modifica di un pdf, con le variazioni senza dover aprire il sito\n\n" + 
