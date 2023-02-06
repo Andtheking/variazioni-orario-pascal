@@ -106,17 +106,18 @@ def log(messaggio: str, bot: Bot = None):
         
 def help(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    # TODO: Scrivere parte professori nell'help
+    # TODO: Scrivere parte professori nell'helpò
     update.message.reply_text(
-        text="Questo bot ti permette di vedere le variazioni orario dell'ITI Pascal.\n\n" +
-        "- Il comando /variazioni che ti fornisce le variazioni (aule e orario) del giorno dopo della classe impostata;\n" +
-        "Se invece non hai impostato una classe, o vuoi vedere una classe diversa dalla tua puoi scrivere semplicemente `/variazioni [CLASSE] [GIORNO-MESE]`.\n\n" +
-        "- Imposta una classe cliccando /impostaClasse (non scrivendo la classe nello stesso messaggio), per poi scrivere la classe nel formato \"1A-5Z\"\n\n" +
-        "Una volta impostata una classe, oltre a non dover specificare nulla nel messaggio /variazioni, riceverai:\n" +
+        text="Questo bot ti permette di vedere le variazioni orario dell'ITI Pascal. (Sia per prof sia per studenti!)\n\n" +
+        "- Il comando /variazioni che ti fornisce le variazioni (aule e orario) del giorno dopo che riguardano la classe o il prof impostato;\n" +
+        "Se invece non hai impostato nulla, o vuoi vedere prof o classe diversa dalla tua puoi scrivere semplicemente `/variazioni [CLASSE o Cognome N.] [GIORNO-MESE]`.\n\n" +
+        "- Imposta una classe cliccando /impostaClasse (o scrivendo la classe nello stesso messaggio tipo `/impostaClasse 4I`), per poi scrivere la classe nel formato \"1A-5Z\"\n\n" +
+        "- Imposta un prof cliccando /impostaProf (o scrivendo il Cognome N. del prof tipo `/impostaProf Spirito F.`). *Attenzione* il bot non controlla se ciò che scrivi come prof sia giusto, se sbagli a scrivere riceverai semplicemente il messaggio \"Nessuna variazione per XXXX\""
+        "Una volta impostata una classe (o prof), oltre a non dover specificare nulla nel messaggio /variazioni, riceverai:\n" +
         "- Notifiche alle 6.30 con le variazioni del giorno e alle 21.00 con quelle del giorno dopo;\n" +
         "- Notifica all'uscire o alla modifica di un pdf, con le variazioni senza dover aprire il sito\n\n" + 
-        "Se le notifiche ti danno fastidio e vuoi usare solo /variazioni, puoi usare il comando /gestisciNotifiche\n\n"+
-        "*Attenzione!* Una volta impostata la classe con /impostaClasse gli amministratori del bot potranno vedere il tuo ID telegram, il tuo username e la tua classe.",
+        "Se le notifiche ti danno fastidio e vuoi usare solo il comando /variazioni, puoi usare il comando /gestisciNotifiche\n\n"+
+        "*Attenzione!* Una volta impostata la classe con /impostaClasse o /impostaProf gli amministratori del bot potranno vedere il tuo ID telegram, il tuo username, la tua classe (se impostata), il tuo prof (se impostato) e le preferenze delle notifiche.",
         parse_mode="Markdown"
     ) 
 
@@ -640,6 +641,9 @@ def impostaProf(update: Update, context: CallbackContext):
     utenti = ottieniUtentiDaID(id)
     
     if len(profScelto)== 0:
+        if len(utenti) != 0 and utenti[0][7] == "studente":
+            update.message.reply_text("Devi essere in modalità prof. /modalita")
+            return ConversationHandler.END
         update.message.reply_text("Mandami il prof nel formato \"Cognome N.\" oppure annulla con /cancel (È a tua discrezione scrivere un prof valido.)")
         if len(utenti) == 0:
             update.message.reply_text("<b>Attenzione!</b> una volta impostata la classe gli admin del bot potranno vedere:\n- ID utente\n- Username o nome\n- Classe\n- Preferenze notifiche\n- Modalità studente o prof\n- Prof selezionato",parse_mode=ParseMode.HTML)
@@ -1006,7 +1010,7 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode="Markdown")
                 if variazioniAuleClasse != "":
                     mandaSeNonBloccato(bot,chat_id=id, text=variazioniAuleClasse)
-                log(f"Mandate variazioni {classe} a {utente[1]}")
+                log(f"Mandate variazioni {classe if utente[7] == 'studente' else sostituto} a {utente[1]}")
             except:
                 pass
 
