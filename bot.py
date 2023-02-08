@@ -6,6 +6,7 @@ ID_CANALE_LOG = '-1001837249321'
 with open("Roba sensibile/token.txt","r") as file:
     TOKEN = file.read().splitlines()[0]
 
+import os
 import hashlib
 import logging
 import re
@@ -90,13 +91,15 @@ def database_disconnection():
 	mydb = None
 	mycursor = None
 
+import datetime
+
 def log(messaggio: str, bot: Bot = None):
     messaggio = messaggio.replace("🟢","CERCHIO_VERDE_EMOJI")
     messaggio = messaggio.replace("🔴", "CERCHIO_ROSSO_EMOJI")
 
     logger.info(messaggio)
     with open('log.txt','a') as f:
-        f.write(time.asctime() + " - " + messaggio + "\n")
+        f.write(datetime.datetime.now().strftime(r"%Y/%m/%d %H:%M:%S,%f") + " - " + messaggio + "\n")
 
     if bot == None:
         return
@@ -130,7 +133,7 @@ def impostaClasse(update: Update, context: CallbackContext):
     id = update.message.from_user.id
 
     utenti = ottieniUtentiDaID(id)
-    if (len(utenti) > 0):   
+    if (len(utenti) > 0):
         utente = utenti[0]
         if utente[7] != 'studente':
             update.message.reply_text("Devi essere in modalità studente. /modalita")
@@ -268,7 +271,6 @@ def ClasseImpostata(update: Update, context: CallbackContext):
         return 
     
     utenti = ottieniUtentiDaID(id=id)
-    classeAttuale = utenti[0][2]
     risposta = ""
     database_connection()
     if len(utenti) == 0:
@@ -278,7 +280,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     elif utenti[0][2] is not None:
         mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
-        risposta = f"Avevi già una classe impostata (`{classeAttuale}`). Ho impostato la classe `{classeDaImpostare}`.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+        risposta = f"Avevi già una classe impostata (`{utenti[0][2]}`). Ho impostato la classe `{classeDaImpostare}`.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     else:
         mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
@@ -379,9 +381,6 @@ def getLink(update: Update, context: CallbackContext):
 
 ALIAS_GIORNI = ["","domani","oggi"]
 
-import time
-
-
 def variazioni(update: Update, context: CallbackContext):
     global mycursor
     global rVarClasse
@@ -451,9 +450,6 @@ def MandaVariazioni(bot: Bot, daCercare: str, giorno: str, chatId: int, prof=Fal
             log(f'{str(e)}')
         except:
             pass
-
-def discord(update: Update, context: CallbackContext, ):
-    update.message.reply_text('Discord del Pascal: https://discord.gg/UmUu6ZNMJy')
 
 def gestisciNotifiche(update: Update, context: CallbackContext):
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
@@ -550,13 +546,14 @@ def bottoneNotificaPremuto(update: Update, context: CallbackContext):
 def backupUtenti():
     utenti = ottieni_utenti()
     
-    with open('Roba sensibile/backupUtenti.txt','w') as f:
+    if not os.path.exists('Roba sensibile/backupUtenti.txt'):
+        open('Roba sensibile/backupUtenti.txt','w').close()
+
+    with open('Roba sensibile/backupUtenti.txt','a') as f:
         for utente in utenti:
             for i,dato in enumerate(utente):
                 f.write(str(dato) + (" - " if i != len(utente)-1 else "\n"))
-
-def canale(update: Update, context: CallbackContext):
-    update.message.reply_text('Canale del bot: https://t.me/+7EexVd-RIoIwZjc0')
+        f.write("\n------------------\n\n")
 
 def spegniNotifiche(update: Update, context: CallbackContext):
     if (not update.message.from_user.id in ADMINS):
@@ -724,10 +721,7 @@ def main():
 
     dp.add_handler(CommandHandler('variazioni', variazioni, run_async=True)) # Visualizza variazioni di un'altra classe del giorno
 
-    dp.add_handler(CommandHandler('discord', discord)) # Discord del pascal
-
     dp.add_handler(CommandHandler('linkPdf', getLink))
-    dp.add_handler(CommandHandler('canale', canale))
 
     dp.add_handler(CommandHandler('gestisciNotifiche',gestisciNotifiche))
     dp.add_handler(CallbackQueryHandler(bottoneNotificaPremuto))
@@ -750,6 +744,8 @@ def main():
 
     dp.add_error_handler(error) # In caso di errore
 
+
+    backupUtenti()
     # TODO: Da sistemare, fa schifo
 
     ORARIO_MATTINA = "06:30"
@@ -894,7 +890,7 @@ def check(bot):
 
         if lastcheck[0] == mod[0]:
             # print("Aspetto") # Non più necessario, sappiamo che funziona
-            time.sleep(300) # 5 min
+            sleep(300) # 5 min
             continue
         else:
             lastcheck = mod
@@ -1019,7 +1015,8 @@ def send_logs(update: Update, context: CallbackContext):
     id = update.message.from_user.id
     if id in ADMINS:
         with open("log.txt","rb") as f:
-            update.message.reply_document(document=f,filename="log.txt")
+            name = f"pascalBotLog {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
+            update.message.reply_document(document=f,filename=name)
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha preso i log alle {update.message.date}")
     else:
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha provato ad accedere ai log alle {update.message.date}")
@@ -1027,21 +1024,19 @@ def send_logs(update: Update, context: CallbackContext):
 def get_users(update: Update, context: CallbackContext):
     id = update.message.from_user.id
     if id in ADMINS:
-        lista_utenti = ""
-        
-        test = "all" in update.message.text
-        
-        lista_utenti += "```\n" if test else ""
-        
-        for utente in ottieni_utenti():
-            lista_utenti += "`" if not test else ""
-            for i,dato in enumerate(utente):
-                lista_utenti += str(dato) + (" - " if i != len(utente)-1 else "")
-            lista_utenti += "`\n" if not test else "\n"
-        
-        lista_utenti += "\n```" if test else ""
+        backupUtenti()
 
-        update.message.reply_text(lista_utenti, parse_mode=ParseMode.MARKDOWN)
+        with open('Roba sensibile/backupUtenti.txt','r') as f:
+            stringa = f.read()
+        lista_utenti = stringa.split("------------------")[-2].split("\n")
+        with open('Roba sensibile/lista_utenti.txt','w') as f:
+            f.write("\n".join([k for k in lista_utenti if k != ""]))
+
+        name = f"pascalUserList {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
+        update.message.reply_document(document=open("Roba sensibile/lista_utenti.txt",'rb'), parse_mode=ParseMode.MARKDOWN, filename=name)
+        update.message.reply_text(text=f"Numero utenti: {len([k for k in lista_utenti if k != ''])}", parse_mode=ParseMode.MARKDOWN)
+        os.remove("Roba sensibile/lista_utenti.txt")
+        
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto tutti gli utenti alle {update.message.date}")
     else:
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha provato a vedere tutti gli utenti alle {update.message.date}")
