@@ -336,10 +336,10 @@ def mandaMessaggio(sera: bool, bot: Bot):
         if len(utenti) != 0:
             for utente in utenti:
                 if (sera and not utente[4]): # Se è sera, e l'utente ha disabilitato la sera salta il ciclo
-                    log(f"L'utente {utente[1]} ha disabilitato le notifiche serali")
+                    print(f"L'utente {utente[1]} ha disabilitato le notifiche serali")
                     continue
                 elif (not sera and not utente[3]): # Se non è sera, e l'utente ha disabilitato la mattina, salta il ciclo
-                    log(f"L'utente {utente[1]} ha disabilitato le notifiche mattutine")
+                    print(f"L'utente {utente[1]} ha disabilitato le notifiche mattutine")
                     continue
                 prof = False
                 if utente[7] == 'prof':
@@ -362,7 +362,8 @@ def mandaMessaggio(sera: bool, bot: Bot):
                         giorno=("domani" if sera else "oggi"),
                         chatId=id
                         )
-                log(f"Variazioni di {'domani' if sera else 'oggi'} mandate a: {utente[1]}")
+                print(f"Variazioni di {'domani' if sera else 'oggi'} mandate a: {utente[1]}")
+        log("Ho finito di mandare le variazioni")
 
 rFormatoData = re.compile(r"(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(?:0[1-9]|[1-9])|1[0-2])\b"+days+")")
 def getLink(update: Update, context: CallbackContext):
@@ -975,13 +976,13 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
             id = utente[0]
 
             if (not utente[5]):
-                log(f"L'utente {utente[1]} ha disabilitato le notifiche live")
+                print(f"L'utente {utente[1]} ha disabilitato le notifiche live")
                 continue
             
 
             if errore:
                 mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode="Markdown")
-                log(f"Mandato errore pdf a {utente[1]}")
+                print(f"Mandato errore pdf a {utente[1]}")
                 continue
             
             variazioniOrarioDaMandare = []
@@ -999,14 +1000,14 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
             
 
             if (not utente[6] and "Nessuna" in stringa):
-                log(f"L'utente {utente[1]} ha disabilitato le notifiche live con nessuna variazione")
+                print(f"L'utente {utente[1]} ha disabilitato le notifiche live con nessuna variazione")
                 continue
             
             try:
                 mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode="Markdown")
                 if variazioniAuleClasse != "":
                     mandaSeNonBloccato(bot,chat_id=id, text=variazioniAuleClasse)
-                log(f"Mandate variazioni {classe if utente[7] == 'studente' else sostituto} a {utente[1]}")
+                print(f"Mandate variazioni {classe if utente[7] == 'studente' else sostituto} a {utente[1]}")
             except:
                 pass
 
