@@ -438,9 +438,9 @@ def MandaVariazioni(bot: Bot, daCercare: str, giorno: str, chatId: int, prof=Fal
         if not prof:
             variazioniAule = f"{variazioniFile.controllaVariazioniAuleClasse(daCercare,giorno)}"
 
-        bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode='Markdown',disable_web_page_preview=True)
+        bot.send_message(chat_id=chatId, text=variazioniOrario, parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         if variazioniAule != '':
-            bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode='Markdown')
+            bot.send_message(chat_id=chatId, text=variazioniAule, parse_mode=ParseMode.HTML)
 
     except Exception as e:
         # robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
@@ -775,7 +775,7 @@ def main():
     updater.start_polling(timeout=200)
     updater.idle()
 
-def mandaSeNonBloccato(bot: Bot, chat_id, text: str, parse_mode="Markdown"):
+def mandaSeNonBloccato(bot: Bot, chat_id, text: str, parse_mode=ParseMode.HTML):
     try:
         bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
     except Unauthorized as e:
@@ -980,7 +980,7 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
             
 
             if errore:
-                mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode="Markdown")
+                mandaSeNonBloccato(bot,chat_id=id, text=messaggioErrore, parse_mode=ParseMode.HTML)
                 print(f"Mandato errore pdf a {utente[1]}")
                 continue
             
@@ -1003,7 +1003,7 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 continue
             
             try:
-                mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode="Markdown")
+                mandaSeNonBloccato(bot,chat_id=id, text=avviso+stringa, parse_mode=ParseMode.HTML)
                 if variazioniAuleClasse != "":
                     mandaSeNonBloccato(bot,chat_id=id, text=variazioniAuleClasse)
                 print(f"Mandate variazioni {classe if utente[7] == 'studente' else sostituto} a {utente[1]}")

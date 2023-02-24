@@ -9,6 +9,9 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+OPEN_FORMAT_SYMBOL = "<code>"
+CLOSE_FORMAT_SYMBOL = "</code>"
+
 
 class DocenteAssente:
     def __init__(self, ora: int, classeAula: str, profAssente: str, sostituti: str, note: str):
@@ -101,12 +104,12 @@ def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedel
         if l != None:
             return "\n\n".join(l)
         else:
-            f"Non è stata pubblicata nessuna variazione orario per il `{giorno}`"
+            f"Non è stata pubblicata nessuna variazione orario per il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}"
 
     linkPdf = ottieniLinkPdf(giorno)
 
     if linkPdf == None:
-        return f"Non è stata pubblicata nessuna variazione orario per il `{giorno}`"
+        return f"Non è stata pubblicata nessuna variazione orario per il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}"
 
     variazioni = []
     for link in linkPdf:
@@ -117,7 +120,7 @@ def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedel
             docentiAssenti = LeggiPdf(percorsiPdf)
         except:
             semaforo.release()
-            variazioni.append(f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link}")
+            variazioni.append(f"Qualcosa è andato storto nella lettura del pdf del giorno {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}.\n\nEcco il link:\n{link}")
             continue
         semaforo.release()
         
@@ -199,20 +202,20 @@ def FormattaOutput(variazioniOrario: list[DocenteAssente], giorno: str, classeOP
         prof = True
 
     if variazioniOrario == None or variazioniOrario == []:
-        return f"Nessuna variazione orario per {'la' if not prof else 'il/la prof'} `{classeOProf}` il `{giorno}`\n\n"
+        return f"Nessuna variazione orario per {'la' if not prof else 'il/la prof'} {OPEN_FORMAT_SYMBOL}{classeOProf}{CLOSE_FORMAT_SYMBOL} il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}\n\n"
 
     stringa = ""
 
     for docente in variazioniOrario:
         stringa += (
-            f"""Ora: `{docente.ora}`
-Classe(Aula): `{docente.classeAula}`
-Docente assente: `{docente.profAssente}`
-Sostituito da: `{docente.sostituti.replace(' | ', ' e ')}`
-Note: `{docente.note}`\n\n"""
+            f"""Ora: {OPEN_FORMAT_SYMBOL}{docente.ora}{CLOSE_FORMAT_SYMBOL}
+Classe(Aula): {OPEN_FORMAT_SYMBOL}{docente.classeAula}{CLOSE_FORMAT_SYMBOL}
+Docente assente: {OPEN_FORMAT_SYMBOL}{docente.profAssente}{CLOSE_FORMAT_SYMBOL}
+Sostituito da: {OPEN_FORMAT_SYMBOL}{docente.sostituti.replace(' | ', ' e ')}{CLOSE_FORMAT_SYMBOL}
+Note: {OPEN_FORMAT_SYMBOL}{docente.note}{CLOSE_FORMAT_SYMBOL}\n\n"""
         )
 
-    return f"Variazioni orario per {'la' if not prof else 'il/la prof'} `{classeOProf}` per il `{giorno}`\n\n{stringa}"
+    return f"Variazioni orario per {'la' if not prof else 'il/la prof'} {OPEN_FORMAT_SYMBOL}{classeOProf}{CLOSE_FORMAT_SYMBOL} per il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}\n\n{stringa}"
 
 
 def controllaVariazioniAuleClasse(classe: str, giorno: str, lista = None):
@@ -261,7 +264,7 @@ def controllaVariazioniAuleClasse(classe: str, giorno: str, lista = None):
     daReturnare = daReturnare[0:-1]
 
     if daReturnare != '':
-        daReturnare = f'Variazioni aule per il `{giorno[0] + "-" + giorno[1]}`\n\n'+daReturnare[0].upper() + daReturnare[1:] + ('.' if daReturnare[-1] != '.' else '')
+        daReturnare = f'Variazioni aule per il {OPEN_FORMAT_SYMBOL}{giorno[0] + "-" + giorno[1]}{CLOSE_FORMAT_SYMBOL}\n\n'+daReturnare[0].upper() + daReturnare[1:] + ('.' if daReturnare[-1] != '.' else '')
 
     return daReturnare.replace(r"\xa","")
 
