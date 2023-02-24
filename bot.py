@@ -113,15 +113,15 @@ def help(update: Update, context: CallbackContext):
     update.message.reply_text(
         text="Questo bot ti permette di vedere le variazioni orario dell'ITI Pascal. (Sia per prof sia per studenti!)\n\n" +
         "- Il comando /variazioni che ti fornisce le variazioni (aule e orario) del giorno dopo che riguardano la classe o il prof impostato;\n" +
-        "Se invece non hai impostato nulla, o vuoi vedere prof o classe diversa dalla tua puoi scrivere semplicemente `/variazioni [CLASSE o Cognome N.] [GIORNO-MESE]`.\n\n" +
-        "- Imposta una classe cliccando /impostaClasse (o scrivendo la classe nello stesso messaggio tipo `/impostaClasse 4I`), per poi scrivere la classe nel formato \"1A-5Z\"" +
-        "- Imposta un prof cliccando /impostaProf (o scrivendo il Cognome N. del prof tipo `/impostaProf Spirito F.`). *Attenzione* il bot non controlla se ciò che scrivi come prof sia giusto, se sbagli a scrivere riceverai semplicemente il messaggio \"Nessuna variazione per XXXX\"\n\n"
+        "Se invece non hai impostato nulla, o vuoi vedere prof o classe diversa dalla tua puoi scrivere semplicemente <code>/variazioni [CLASSE o Cognome N.] [GIORNO-MESE]</code>.\n\n" +
+        "- Imposta una classe cliccando /impostaClasse (o scrivendo la classe nello stesso messaggio tipo <code>/impostaClasse 4I</code>), per poi scrivere la classe nel formato \"1A-5Z\"" +
+        "- Imposta un prof cliccando /impostaProf (o scrivendo il Cognome N. del prof tipo <code>/impostaProf Spirito F.</code>).\n<b>Attenzione</b> il bot non controlla se ciò che scrivi come prof sia giusto, se sbagli a scrivere riceverai semplicemente il messaggio \"Nessuna variazione per XXXX\"\n\n"
         "Una volta impostata una classe (o prof), oltre a non dover specificare nulla nel messaggio /variazioni, riceverai:\n" +
         "- Notifiche alle 6.30 con le variazioni del giorno e alle 21.00 con quelle del giorno dopo;\n" +
         "- Notifica all'uscire o alla modifica di un pdf, con le variazioni senza dover aprire il sito\n\n" + 
         "Se le notifiche ti danno fastidio e vuoi usare solo il comando /variazioni, puoi usare il comando /gestisciNotifiche\n\n"+
-        "*Attenzione!* Una volta impostata la classe con /impostaClasse o /impostaProf gli amministratori del bot potranno vedere il tuo ID telegram, il tuo username, la tua classe (se impostata), il tuo prof (se impostato) e le preferenze delle notifiche.",
-        parse_mode="Markdown"
+        "<b>Attenzione!</b> Una volta impostata la classe con /impostaClasse o /impostaProf gli amministratori del bot potranno vedere il tuo ID telegram, il tuo username, la tua classe (se impostata), il tuo prof (se impostato) e le preferenze delle notifiche.",
+        parse_mode=ParseMode.HTML
     ) 
 
 def start(update: Update, context: CallbackContext):
@@ -173,15 +173,15 @@ def impostaClasse(update: Update, context: CallbackContext):
     database_connection()
     if (classeAttuale is None):
         mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
-        messaggio = f"Non avevi una classe impostata, imposto la: `{classeDaImpostare}`;"
+        messaggio = f"Non avevi una classe impostata, imposto la: <code>{classeDaImpostare}</code>;"
     else:
         mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
-        messaggio = f"Avevi già impostato: `{classeAttuale}`, imposto: `{classeDaImpostare}`;"
+        messaggio = f"Avevi già impostato: <code>{classeAttuale}</code>, imposto: <code>{classeDaImpostare}</code>;"
     mydb.commit()
     database_disconnection()
 
 
-    update.message.reply_text(text=messaggio, parse_mode=ParseMode.MARKDOWN)
+    update.message.reply_text(text=messaggio, parse_mode=ParseMode.HTML)
 
 
     
@@ -238,18 +238,18 @@ def ProfImpostato(update: Update, context: CallbackContext):
     if len(utenti) == 0:
         mycursor.execute(f'INSERT utenti (id, username, modalita, prof) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"prof\",\"{messaggio}\");')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{messaggio}\" come prof alle {roboAntiCrashPerEdit.date}")
-        risposta = f"Hai impostato `{roboAntiCrashPerEdit.text}` come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+        risposta = f"Hai impostato <code>{roboAntiCrashPerEdit.text}</code> come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     elif utenti[0][8] != "N/A":
         mycursor.execute(f'UPDATE utenti SET prof=\"{messaggio}\" WHERE id=\"{id}\";')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
-        risposta = f"Avevi già un prof impostato (`{utenti[0][8]}`). Ho impostato `{messaggio}` come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+        risposta = f"Avevi già un prof impostato (<code>{utenti[0][8]}</code>). Ho impostato <code>{messaggio}</code> come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     else:
         mycursor.execute(f'UPDATE utenti SET prof=\"{messaggio}\" WHERE id=\"{id}\";')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
         messaggio = f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     
     mydb.commit()
-    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.MARKDOWN)
+    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.HTML)
 
     database_disconnection()
     
@@ -276,11 +276,11 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     if len(utenti) == 0:
         mycursor.execute(f'INSERT utenti (id, username, classe, modalita) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"{classeDaImpostare}\",\"studente\");')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{classeDaImpostare}\" come classe alle {roboAntiCrashPerEdit.date}")
-        risposta = f"Hai impostato la classe `{classeDaImpostare}`.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+        risposta = f"Hai impostato la classe <code>{classeDaImpostare}</code>.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     elif utenti[0][2] is not None:
         mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
-        risposta = f"Avevi già una classe impostata (`{utenti[0][2]}`). Ho impostato la classe `{classeDaImpostare}`.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+        risposta = f"Avevi già una classe impostata (<code>{utenti[0][2]}</code>). Ho impostato la classe <code>{classeDaImpostare}</code>.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     else:
         mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
@@ -289,7 +289,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     mydb.commit()
     database_disconnection()
 
-    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.MARKDOWN)
+    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.HTML)
 
     return ConversationHandler.END
 
@@ -376,8 +376,7 @@ def getLink(update: Update, context: CallbackContext):
 
     m = rFormatoData.match(giorno)
     robaAntiCrashPerEdit.reply_text(
-        "\n\nTrovato un altro PDF con la stessa data:\n\n".join(variazioniFile.ottieniLinkPdf(giorno if m else "domani")),
-        parse_mode=ParseMode.MARKDOWN
+        "\n\nTrovato un altro PDF con la stessa data:\n\n".join(variazioniFile.ottieniLinkPdf(giorno if m else "domani"))
     )
 
 ALIAS_GIORNI = ["","domani","oggi"]
@@ -409,7 +408,7 @@ def variazioni(update: Update, context: CallbackContext):
     if daCercare is None:
         utenti = ottieniUtentiDaID(id)
         if len(utenti) == 0:
-            robaAntiCrashPerEdit.reply_text("Devi specificare per forza un prof o una classe se non sei registrato (`/variazioni [CLASSE o COGNOME. N.] [GIORNO]`)",parse_mode=ParseMode.MARKDOWN)
+            robaAntiCrashPerEdit.reply_text("Devi specificare per forza un prof o una classe se non sei registrato (<code>/variazioni [CLASSE o COGNOME. N.] [GIORNO]</code>)",parse_mode=ParseMode.HTML)
             return
         utente = utenti[0]
         if utente[7] == 'prof':
@@ -418,7 +417,7 @@ def variazioni(update: Update, context: CallbackContext):
         elif utente[7] == 'studente':
             daCercare = utente[2]
             if daCercare is None:
-                robaAntiCrashPerEdit.reply_text("Non hai una classe impostata, impostala con /impostaClasse oppure usa il comando intero (`/variazioni [CLASSE o COGNOME. N.] [GIORNO]`)",parse_mode=ParseMode.MARKDOWN)
+                robaAntiCrashPerEdit.reply_text("Non hai una classe impostata, impostala con /impostaClasse oppure usa il comando intero (<code>/variazioni [CLASSE o COGNOME. N.] [GIORNO]</code>)",parse_mode=ParseMode.HTML)
                 return
 
     giorno = m.group(3)
@@ -673,15 +672,15 @@ def impostaProf(update: Update, context: CallbackContext):
     if (profAttuale == "N/A"):
         mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
         mydb.commit()
-        messaggio = f"Non avevi un prof impostato, imposto: `{profScelto}`; (Deve essere nel formato Cognome N.)"
+        messaggio = f"Non avevi un prof impostato, imposto: <code>{profScelto}</code>; (Deve essere nel formato Cognome N.)"
     else:
         mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
         mydb.commit()
-        messaggio = f"Avevi già impostato: `{profAttuale}`, imposto: `{profScelto}`; (Deve essere solo il cognome)"
+        messaggio = f"Avevi già impostato: <code>{profAttuale}</code>, imposto: <code>{profScelto}</code>; (Deve essere solo il cognome)"
     database_disconnection()
 
 
-    robaAntiCrashPerEdit.reply_text(text=messaggio, parse_mode=ParseMode.MARKDOWN)
+    robaAntiCrashPerEdit.reply_text(text=messaggio, parse_mode=ParseMode.HTML)
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -958,13 +957,13 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
                 f.write(k + ' - ')
 
         errore = False
-        avviso = f"Trovata una modifica sulle variazioni del `{giorno}`.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
+        avviso = f"Trovata una modifica sulle variazioni del <code>{giorno}</code>.\n(Potrebbe non cambiare nulla per la tua classe)\n\n"
         
         try: # try in caso la lettura del PDF fallisce
             variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
         except:
             errore = True
-            messaggioErrore = avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno `{giorno}`.\n\nEcco il link:\n{link.get('href', [])}"
+            messaggioErrore = avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno <code>{giorno}</code>.\n\nEcco il link:\n{link.get('href', [])}"
         
 
         for utente in ottieni_utenti():
@@ -1034,8 +1033,8 @@ def get_users(update: Update, context: CallbackContext):
             f.write("\n".join([k for k in lista_utenti if k != ""]))
 
         name = f"pascalUserList {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
-        update.message.reply_document(document=open("Roba sensibile/lista_utenti.txt",'rb'), parse_mode=ParseMode.MARKDOWN, filename=name)
-        update.message.reply_text(text=f"Numero utenti: {len([k for k in lista_utenti if k != ''])}", parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_document(document=open("Roba sensibile/lista_utenti.txt",'rb'), parse_mode=ParseMode.HTML, filename=name)
+        update.message.reply_text(text=f"Numero utenti: {len([k for k in lista_utenti if k != ''])}", parse_mode=ParseMode.HTML)
         os.remove("Roba sensibile/lista_utenti.txt")
         
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha visto tutti gli utenti alle {update.message.date}")
