@@ -59,7 +59,7 @@ def schedule_checker():
         sleep(1)
 
 mydb = None
-mycursor: mysql.connector.CMySQLConnection | mysql.connector.MySQLConnection = None
+mycursor = None
 
 days = "|oggi|domani"
 
