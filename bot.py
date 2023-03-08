@@ -59,7 +59,7 @@ def schedule_checker():
         sleep(1)
 
 mydb = None
-mycursor = None
+mycursor: mysql.connector.CMySQLConnection | mysql.connector.MySQLConnection = None
 
 days = "|oggi|domani"
 
@@ -81,7 +81,7 @@ def database_connection():
 	  database=credenziali_database[3]
 	)
 
-	mycursor = mydb.cursor(buffered=True)
+	mycursor = mydb.cursor(prepared=True)
 
 def database_disconnection():
 	global mydb
@@ -109,7 +109,6 @@ def log(messaggio: str, bot: Bot = None):
         
 def help(update: Update, context: CallbackContext):
     log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
-    # TODO: Scrivere parte professori nell'helpò
     update.message.reply_text(
         text="Questo bot ti permette di vedere le variazioni orario dell'ITI Pascal. (Sia per prof sia per studenti!)\n\n" +
         "- Il comando /variazioni che ti fornisce le variazioni (aule e orario) del giorno dopo che riguardano la classe o il prof impostato;\n" +
@@ -154,8 +153,11 @@ def impostaClasse(update: Update, context: CallbackContext):
         return ConversationHandler.END
     
     if len(utenti) == 0: 
-        database_connection()
-        mycursor.execute(f"INSERT INTO utenti (id,username,classe,modalita) VALUES (\"{id}\",\"{update.message.from_user.name}\",\"{classeDaImpostare}\",\"studente\")")
+        database_connection() #(id,update.message.from_user.name,classeDaImpostare,)
+        mycursor.execute("INSERT INTO utenti (id,username,classe,modalita) VALUES (%s,%s,%s,\"studente\")",
+                         (id,update.message.from_user.name,classeDaImpostare,)
+                         )
+        
         mydb.commit()
         update.message.reply_text(f"Aggiunto in modalità studente con classe impostata a: {classeDaImpostare}")
         database_disconnection()
@@ -171,20 +173,17 @@ def impostaClasse(update: Update, context: CallbackContext):
     classeAttuale = utente[2]
 
     database_connection()
-    if (classeAttuale is None):
-        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+    if (classeAttuale is None):  
+        mycursor.execute('UPDATE utenti SET classe=%s WHERE id=%s;',(classeDaImpostare,id,))
         messaggio = f"Non avevi una classe impostata, imposto la: <code>{classeDaImpostare}</code>;"
     else:
-        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+        mycursor.execute('UPDATE utenti SET classe=%s WHERE id=%s;',(classeDaImpostare,id,))
         messaggio = f"Avevi già impostato: <code>{classeAttuale}</code>, imposto: <code>{classeDaImpostare}</code>;"
     mydb.commit()
     database_disconnection()
 
 
     update.message.reply_text(text=messaggio, parse_mode=ParseMode.HTML)
-
-
-    
 
 def broadcast(update: Update, contex: CallbackContext):
     global mycursor
@@ -236,15 +235,16 @@ def ProfImpostato(update: Update, context: CallbackContext):
     database_connection()
     risposta = ""
     if len(utenti) == 0:
-        mycursor.execute(f'INSERT utenti (id, username, modalita, prof) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"prof\",\"{messaggio}\");')
+        
+        mycursor.execute('INSERT utenti (id, username, modalita, prof) VALUES (%s,%s,\"prof\",%s);',(id,roboAntiCrashPerEdit.from_user.name,messaggio,))
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{messaggio}\" come prof alle {roboAntiCrashPerEdit.date}")
         risposta = f"Hai impostato <code>{roboAntiCrashPerEdit.text}</code> come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     elif utenti[0][8] != "N/A":
-        mycursor.execute(f'UPDATE utenti SET prof=\"{messaggio}\" WHERE id=\"{id}\";')
+        mycursor.execute('UPDATE utenti SET prof=%s WHERE id=%s;',(messaggio,id,))
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
         risposta = f"Avevi già un prof impostato (<code>{utenti[0][8]}</code>). Ho impostato <code>{messaggio}</code> come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     else:
-        mycursor.execute(f'UPDATE utenti SET prof=\"{messaggio}\" WHERE id=\"{id}\";')
+        mycursor.execute('UPDATE utenti SET prof=%s WHERE id=%s;',(messaggio,id,))
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
         messaggio = f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     
@@ -254,7 +254,6 @@ def ProfImpostato(update: Update, context: CallbackContext):
     database_disconnection()
     
 
-# TODO: Finire di cambiare le chiamate del metodo log() quando posso mettere context.bot
 def ClasseImpostata(update: Update, context: CallbackContext):
     global mycursor
     global mydb
@@ -274,15 +273,32 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     risposta = ""
     database_connection()
     if len(utenti) == 0:
-        mycursor.execute(f'INSERT utenti (id, username, classe, modalita) VALUES (\"{id}\",\"{roboAntiCrashPerEdit.from_user.name}\",\"{classeDaImpostare}\",\"studente\");')
+        mycursor.execute('''
+                         INSERT utenti (id, username, classe, modalita) 
+                         VALUES (%s,%s,%s,\"studente\");
+                         ''',
+                         (str(id), roboAntiCrashPerEdit.from_user.name, classeDaImpostare,)
+                         )
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha impostato \"{classeDaImpostare}\" come classe alle {roboAntiCrashPerEdit.date}")
         risposta = f"Hai impostato la classe <code>{classeDaImpostare}</code>.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     elif utenti[0][2] is not None:
-        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+        mycursor.execute('''
+                         UPDATE utenti 
+                         SET classe=%s 
+                         WHERE id=%s;
+                         ''',
+                         (classeDaImpostare,str(id),)
+                         )
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
         risposta = f"Avevi già una classe impostata (<code>{utenti[0][2]}</code>). Ho impostato la classe <code>{classeDaImpostare}</code>.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     else:
-        mycursor.execute(f'UPDATE utenti SET classe=\"{classeDaImpostare}\" WHERE id=\"{id}\";')
+        mycursor.execute('''
+                         UPDATE utenti 
+                         SET classe=%s
+                         WHERE id=%s;
+                         ''',
+                         (classeDaImpostare,id,)
+                         )
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
         risposta = f"Hai impostato la classe \"{roboAntiCrashPerEdit.text}\".\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
         
@@ -324,7 +340,6 @@ def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Azione annullata.")
     return ConversationHandler.END
 
-# TODO Versione prof da fare
 def mandaMessaggio(sera: bool, bot: Bot):
     if MANDO:
         global mycursor
@@ -590,7 +605,6 @@ def cancellami(update: Update, context: CallbackContext):
     if len(utenti) == 0:
         update.message.reply_text(f"Non hai una classe impostata. Se hai provato a cancellarti non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
-
     else:
         database_connection()
         mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
@@ -653,7 +667,11 @@ def impostaProf(update: Update, context: CallbackContext):
 
     if len(utenti) == 0: 
         database_connection()
-        mycursor.execute(f"INSERT INTO utenti (id,username,modalita,prof) VALUES (\"{id}\",\"{robaAntiCrashPerEdit.from_user.name}\",\"prof\",\"{profScelto}\")")
+        mycursor.execute("""
+                         INSERT INTO utenti (id,username,modalita,prof) 
+                         VALUES (%s,%s,\"prof\",%s)""",
+                         (id,robaAntiCrashPerEdit.from_user.name, profScelto,)
+                    )
         mydb.commit()
         robaAntiCrashPerEdit.reply_text(f"Aggiunto in modalità professore con prof impostato a: {profScelto}")
         database_disconnection()
@@ -669,12 +687,12 @@ def impostaProf(update: Update, context: CallbackContext):
     profAttuale = utente[8]
 
     database_connection()
-    if (profAttuale == "N/A"):
-        mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
+    if (profAttuale == "N/A"): # 
+        mycursor.execute('UPDATE utenti SET prof=%s WHERE id=%s;',(profScelto,id,))
         mydb.commit()
         messaggio = f"Non avevi un prof impostato, imposto: <code>{profScelto}</code>; (Deve essere nel formato Cognome N.)"
     else:
-        mycursor.execute(f'UPDATE utenti SET prof=\"{profScelto}\" WHERE id=\"{id}\";')
+        mycursor.execute('UPDATE utenti SET prof=%s WHERE id=%s;',(profScelto,id,))
         mydb.commit()
         messaggio = f"Avevi già impostato: <code>{profAttuale}</code>, imposto: <code>{profScelto}</code>; (Deve essere solo il cognome)"
     database_disconnection()
@@ -696,7 +714,6 @@ def main():
         open("sent_pdfs.txt","w").close()
         sent_pdfs = []
     
-    # TODO: impostaClasse e impostaProf devono avere stesso formato, e devono anche poter essere scritti in un unico messaggio oltre a quello a capo
     imposta_classe = ConversationHandler(
         entry_points=[CommandHandler("impostaClasse", impostaClasse)],
         states={
@@ -746,6 +763,7 @@ def main():
 
 
     backupUtenti()
+    
     # TODO: Da sistemare, fa schifo
 
     ORARIO_MATTINA = "06:30"
@@ -852,6 +870,7 @@ def ottieniUtentiDaID(id):
     utenti = aggiustaUtenti(utenti)
     return utenti
 
+# TODO Spostare in file separato
 # DA QUA IN GIÙ PER CONTROLLO LIVE DELLE VARIAZIONI
 URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
 
