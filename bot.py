@@ -139,6 +139,7 @@ def impostaClasse(update: Update, context: CallbackContext):
             return ConversationHandler.END
     
     classeDaImpostare = update.message.text.lower().replace("/impostaclasse","").strip().upper()
+    
     if classeDaImpostare == "":
         update.message.reply_text("Mandami la classe nel formato \"1A\" oppure annulla con /cancel")
         if len(utenti) == 0:
@@ -225,9 +226,12 @@ def ProfImpostato(update: Update, context: CallbackContext):
     roboAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
     messaggio = str(roboAntiCrashPerEdit.text).title()
 
+    if '<' in messaggio or '>' in messaggio:
+        roboAntiCrashPerEdit.reply_text("Non puoi inserire < o > nel messaggio. Riprova o /cancel")
+        return
 
     if len(messaggio) <= 2:
-        update.message.reply_text("Nome prof non valido, almeno 3 caratteri.")
+        update.message.reply_text("Nome prof non valido, almeno 3 caratteri. Riprova o /cancel")
         return
 
     utenti = ottieniUtentiDaID(id=id)
@@ -249,9 +253,10 @@ def ProfImpostato(update: Update, context: CallbackContext):
         messaggio = f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     
     mydb.commit()
-    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.HTML)
-
     database_disconnection()
+    
+    roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.HTML)
+    return ConversationHandler.END
     
 
 def ClasseImpostata(update: Update, context: CallbackContext):
@@ -363,7 +368,7 @@ def mandaMessaggio(sera: bool, bot: Bot):
                 id = utente[0]
                 classe = utente[2]
                 sostituto = utente[8]
-                if prof:
+                if prof: # TODO: Trovare un modo per velocizzarlo, impiega troppo tempo.
                     MandaVariazioni(
                         bot=bot,
                         daCercare=sostituto, 
@@ -386,7 +391,11 @@ def getLink(update: Update, context: CallbackContext):
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
     
     log(f"{update.message.from_user.name}, {update.message.from_user.id} ha fatto {robaAntiCrashPerEdit.text}")
-
+    
+    if '<' in robaAntiCrashPerEdit.text or '>' in robaAntiCrashPerEdit.text:
+        robaAntiCrashPerEdit.reply_text("Non puoi inserire < o > nel messaggio.")
+        return
+    
     giorno = robaAntiCrashPerEdit.text.lower().replace('/linkpdf', '').strip()
 
     m = rFormatoData.match(giorno)
@@ -407,6 +416,10 @@ def variazioni(update: Update, context: CallbackContext):
     id = robaAntiCrashPerEdit.from_user['id']
 
     log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
+    
+    if '<' in robaAntiCrashPerEdit.text or '>' in robaAntiCrashPerEdit.text:
+        robaAntiCrashPerEdit.reply_text("Non puoi inserire < o > nel messaggio.")
+        return
     
     m = rVarClasse.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
     
@@ -446,6 +459,7 @@ def variazioni(update: Update, context: CallbackContext):
 
 
 def MandaVariazioni(bot: Bot, daCercare: str, giorno: str, chatId: int, prof=False):
+    
     try:
         variazioniOrario = f"{variazioniFile.Main(daCercare,giorno,prof=prof)}"
         
@@ -485,17 +499,6 @@ def gestisciNotifiche(update: Update, context: CallbackContext):
     
     keyboard = ottieniTastieraNotifiche(utente=utente)
     robaAntiCrashPerEdit.reply_text("Ecco le impostazioni notifiche",reply_markup=InlineKeyboardMarkup(keyboard))
-
-
-
-
-
-    # database_connection()
-    # log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database dell'inoltro alle {update.message.date}")
-    # mycursor.execute(f'UPDATE utenti SET notifiche_mattina=0 WHERE id=\"{id}\";')
-    # update.message.reply_text('Non riceverai più notifiche. Per riabilitare le notifiche devi rifare /impostaClasse.')
-    # mydb.commit()
-    # database_disconnection()
 
 def ottieniTastieraNotifiche(utente) -> list[list[InlineKeyboardButton]]:
     opzioni_notifiche = {
@@ -609,9 +612,9 @@ def cancellami(update: Update, context: CallbackContext):
         database_connection()
         mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
         mydb.commit()
+        database_disconnection()
         update.message.reply_text('Cancellato con successo dalla lista utenti del bot. Non riceverai più notifiche e per re-iscriverti dovrai rifare il comando /impostaClasse. (Le notifiche torneranno tutte attive)')
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database alle {update.message.date}")
-        database_disconnection()
 
 def cambia_modalita(update: Update, context: CallbackContext):
     id = update.message.from_user.id
@@ -699,6 +702,7 @@ def impostaProf(update: Update, context: CallbackContext):
 
 
     robaAntiCrashPerEdit.reply_text(text=messaggio, parse_mode=ParseMode.HTML)
+    
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -725,7 +729,7 @@ def main():
     imposta_prof = ConversationHandler(
         entry_points=[CommandHandler("impostaProf", impostaProf)],
         states={
-            CLASSE: [MessageHandler(Filters.text & ~ Filters.command, ProfImpostato)],
+            PROF: [MessageHandler(Filters.text & ~ Filters.command, ProfImpostato)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
@@ -870,7 +874,7 @@ def ottieniUtentiDaID(id):
     utenti = aggiustaUtenti(utenti)
     return utenti
 
-# TODO Spostare in file separato
+# TODO: Spostare in file separato
 # DA QUA IN GIÙ PER CONTROLLO LIVE DELLE VARIAZIONI
 URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
 
