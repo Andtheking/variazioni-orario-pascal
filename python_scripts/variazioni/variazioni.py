@@ -146,7 +146,7 @@ def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedel
                 classeOProf=daCercare
                 )
             )
-    return "Trovato un altro PDF con la stessa data:\n".join(variazioni)
+    return "\n\nTrovato un altro PDF con la stessa data:\n".join(variazioni)
 
 def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
     docentiAssenti: list[DocenteAssente] = []
