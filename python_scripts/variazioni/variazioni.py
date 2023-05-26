@@ -75,6 +75,9 @@ def convertiMese(n: str):
 
 def CercaClasse(classe: str, docentiAssenti: list[DocenteAssente]) -> list[DocenteAssente]:
 
+    if classe is None:
+        raise Exception("La classe non può essere None")
+    
     variazioniClasse = []
 
     for docente in docentiAssenti:

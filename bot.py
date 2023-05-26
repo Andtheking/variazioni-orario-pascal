@@ -641,6 +641,9 @@ def cambia_modalita(update: Update, context: CallbackContext):
         mycursor.execute(f'UPDATE utenti SET modalita=\"studente\" WHERE id=\"{id}\";')
         mydb.commit()
         messaggio = "Modalità cambiata in studente. Ora riceverai le notifiche in base alle classi e non ai sostituti"
+        if utente[2] is None:
+            messaggio += ". Attenzione, non hai una classe impostata. Ciò significa che non riceverai nessuna notifica. Impostane una con /impostaClasse."
+        
     database_disconnection()
     
     update.message.reply_text(text=messaggio)
@@ -1009,7 +1012,9 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
             
             variazioniOrarioDaMandare = []
             stringa = ""
-            if (modalita == "studente"):
+            if (modalita == "studente"): 
+                if classe is None:
+                    continue
                 variazioniOrarioDaMandare = variazioniFile.CercaClasse(classe,variazioniOrario)
                 variazioniAuleClasse = variazioniFile.controllaVariazioniAuleClasse(classe,giorno,variazioniAule)
                 stringa = variazioniFile.FormattaOutput(variazioniOrarioDaMandare,giorno=giorno,classeOProf=classe)
