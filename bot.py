@@ -58,38 +58,28 @@ def schedule_checker():
         schedule.run_pending()
         sleep(1)
 
-mydb = None
-mycursor = None
-
 days = "|oggi|domani"
-
 
 #https://regex101.com/r/5s6yUW/1
 rVarClasse = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
 rVarProf = re.compile(r"(/variazioni) ?(\D+?\D+?)? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(?:0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
-
 rImp = re.compile(r"^[1-5](?:[a-z]|[A-Z])$")
 
-def database_connection():
-	global mydb
-	global mycursor
+def database_connection() -> mysql.connector.MySQLConnection:
+    
+    try:
+        return mysql.connector.connect(
+            host=credenziali_database[0],
+            user=credenziali_database[1],
+            password=credenziali_database[2],
+            database=credenziali_database[3]
+            )
+    except:
+        log("C'è stato un problema con la connessione al database")
+        raise Exception("C'è stato un problema con la connessione al database")        
 
-	mydb = mysql.connector.connect(
-	  host=credenziali_database[0],
-	  user=credenziali_database[1],
-	  password=credenziali_database[2],
-	  database=credenziali_database[3]
-	)
-
-	mycursor = mydb.cursor(prepared=True)
-
-def database_disconnection():
-	global mydb
-	global mycursor
-
-	mydb.disconnect() if mydb != None else log("No database")
-	mydb = None
-	mycursor = None
+def database_disconnection(db: mysql.connector.MySQLConnection):
+	db.disconnect() if db != None else log("Nessun database dalla quale disconnettersi")
 
 import datetime
 
@@ -154,14 +144,17 @@ def impostaClasse(update: Update, context: CallbackContext):
         return ConversationHandler.END
     
     if len(utenti) == 0: 
-        database_connection() #(id,update.message.from_user.name,classeDaImpostare,)
+        con = database_connection()
+        mycursor = database_cursor(con=con)
+        
         mycursor.execute("INSERT INTO utenti (id,username,classe,modalita) VALUES (%s,%s,%s,\"studente\")",
                          (id,update.message.from_user.name,classeDaImpostare,)
                          )
+        con.commit()
         
-        mydb.commit()
         update.message.reply_text(f"Aggiunto in modalità studente con classe impostata a: {classeDaImpostare}")
-        database_disconnection()
+        database_disconnection(con)
+        
         return ConversationHandler.END
 
     utente = utenti[0]
@@ -173,18 +166,24 @@ def impostaClasse(update: Update, context: CallbackContext):
 
     classeAttuale = utente[2]
 
-    database_connection()
+    con = database_connection()
+    mycursor = database_cursor(con)
+   
     if (classeAttuale is None):  
         mycursor.execute('UPDATE utenti SET classe=%s WHERE id=%s;',(classeDaImpostare,id,))
         messaggio = f"Non avevi una classe impostata, imposto la: <code>{classeDaImpostare}</code>;"
     else:
         mycursor.execute('UPDATE utenti SET classe=%s WHERE id=%s;',(classeDaImpostare,id,))
         messaggio = f"Avevi già impostato: <code>{classeAttuale}</code>, imposto: <code>{classeDaImpostare}</code>;"
-    mydb.commit()
-    database_disconnection()
+    
+    con.commit()
+    database_disconnection(con)
 
 
     update.message.reply_text(text=messaggio, parse_mode=ParseMode.HTML)
+
+def database_cursor(con: mysql.connector.MySQLConnection):
+    return con.cursor(prepared=True)
 
 def broadcast(update: Update, contex: CallbackContext):
     global mycursor
@@ -236,7 +235,9 @@ def ProfImpostato(update: Update, context: CallbackContext):
 
     utenti = ottieniUtentiDaID(id=id)
     
-    database_connection()
+    con = database_connection()
+    mycursor = database_cursor(con)
+    
     risposta = ""
     if len(utenti) == 0:
         
@@ -252,8 +253,8 @@ def ProfImpostato(update: Update, context: CallbackContext):
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
         messaggio = f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     
-    mydb.commit()
-    database_disconnection()
+    con.commit()
+    database_disconnection(con)
     
     roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
@@ -276,7 +277,10 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     
     utenti = ottieniUtentiDaID(id=id)
     risposta = ""
-    database_connection()
+    
+    con = database_connection()
+    mycursor = database_cursor(con)
+    
     if len(utenti) == 0:
         mycursor.execute('''
                          INSERT utenti (id, username, classe, modalita) 
@@ -307,8 +311,8 @@ def ClasseImpostata(update: Update, context: CallbackContext):
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
         risposta = f"Hai impostato la classe \"{roboAntiCrashPerEdit.text}\".\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
         
-    mydb.commit()
-    database_disconnection()
+    con.commit()
+    database_disconnection(con)
 
     roboAntiCrashPerEdit.reply_text(risposta, parse_mode=ParseMode.HTML)
 
@@ -319,10 +323,11 @@ def classe(update: Update, context: CallbackContext):
     id = update.message.from_user.id
     messaggio = update.message.text
 
-    database_connection()
+    con = database_connection()
+    mycursor = database_cursor(con)
     mycursor.execute(f'SELECT id, username, classe FROM utenti WHERE id={id};')
     idInTabella = mycursor.fetchall()
-    database_disconnection()
+    database_disconnection(con)
 
     if len(idInTabella) == 0:
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({messaggio}) Data e ora: {update.message.date}")
@@ -536,7 +541,8 @@ def bottoneNotificaPremuto(update: Update, context: CallbackContext):
 
     risposta = ""
 
-    database_connection()
+    con = database_connection()
+    mycursor = database_cursor(con)()
     if tipo_notifica == "mattina":
         mycursor.execute(f'UPDATE utenti SET notifiche_mattina = \"{str(not utente[3])}\" WHERE id=\"{utente[0]}\";')
         risposta = "Notifiche mattina " + ('accese.' if not utente[3] else 'spente.')
@@ -549,8 +555,8 @@ def bottoneNotificaPremuto(update: Update, context: CallbackContext):
     elif tipo_notifica == "nessunaVar":
         mycursor.execute(f'UPDATE utenti SET notifiche_nessunaVar = \"{str(not utente[6])}\" WHERE id=\"{utente[0]}\";')
         risposta = "Notifiche con nessuna variazione " + ('accese.' if not utente[6] else 'spente.')
-    mydb.commit()
-    database_disconnection()
+    con.commit()
+    database_disconnection(con)
 
     utente = ottieniUtentiDaID(update.callback_query.from_user.id)[0]
     query.message.edit_reply_markup(
@@ -609,10 +615,11 @@ def cancellami(update: Update, context: CallbackContext):
         update.message.reply_text(f"Non hai una classe impostata. Se hai provato a cancellarti non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
     else:
-        database_connection()
+        mydb = database_connection()
+        mycursor = database_cursor(mydb)()
         mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
         mydb.commit()
-        database_disconnection()
+        database_disconnection(mydb)
         update.message.reply_text('Cancellato con successo dalla lista utenti del bot. Non riceverai più notifiche e per re-iscriverti dovrai rifare il comando /impostaClasse. (Le notifiche torneranno tutte attive)')
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database alle {update.message.date}")
 
@@ -632,7 +639,8 @@ def cambia_modalita(update: Update, context: CallbackContext):
 
     messaggio = ""
 
-    database_connection()
+    mydb = database_connection()
+    mycursor = database_cursor(mydb)
     if mod == 'studente':
         mycursor.execute(f'UPDATE utenti SET modalita=\"prof\" WHERE id=\"{id}\";')
         mydb.commit()
@@ -644,7 +652,7 @@ def cambia_modalita(update: Update, context: CallbackContext):
         if utente[2] is None:
             messaggio += ". Attenzione, non hai una classe impostata. Ciò significa che non riceverai nessuna notifica. Impostane una con /impostaClasse."
         
-    database_disconnection()
+    database_disconnection(mydb)
     
     update.message.reply_text(text=messaggio)
 
@@ -672,7 +680,8 @@ def impostaProf(update: Update, context: CallbackContext):
 
 
     if len(utenti) == 0: 
-        database_connection()
+        mydb = database_connection()
+        mycursor = database_cursor(mydb)
         mycursor.execute("""
                          INSERT INTO utenti (id,username,modalita,prof) 
                          VALUES (%s,%s,\"prof\",%s)""",
@@ -680,7 +689,7 @@ def impostaProf(update: Update, context: CallbackContext):
                     )
         mydb.commit()
         robaAntiCrashPerEdit.reply_text(f"Aggiunto in modalità professore con prof impostato a: {profScelto}")
-        database_disconnection()
+        database_disconnection(mydb)
         return ConversationHandler.END
 
     utente = utenti[0]
@@ -692,7 +701,8 @@ def impostaProf(update: Update, context: CallbackContext):
 
     profAttuale = utente[8]
 
-    database_connection()
+    mydb = database_connection()
+    mycursor = database_cursor(mydb)
     if (profAttuale == "N/A"): # 
         mycursor.execute('UPDATE utenti SET prof=%s WHERE id=%s;',(profScelto,id,))
         mydb.commit()
@@ -701,7 +711,7 @@ def impostaProf(update: Update, context: CallbackContext):
         mycursor.execute('UPDATE utenti SET prof=%s WHERE id=%s;',(profScelto,id,))
         mydb.commit()
         messaggio = f"Avevi già impostato: <code>{profAttuale}</code>, imposto: <code>{profScelto}</code>; (Deve essere solo il cognome)"
-    database_disconnection()
+    database_disconnection(mydb)
 
 
     robaAntiCrashPerEdit.reply_text(text=messaggio, parse_mode=ParseMode.HTML)
@@ -826,10 +836,11 @@ def ottieni_utenti() -> list[list[str]]:
         ]
     ]
     '''
-    database_connection()
+    mydb = database_connection()
+    mycursor = database_cursor(mydb)
     mycursor.execute(f'SELECT * FROM utenti;')
     utenti: list[list[str]] = mycursor.fetchall()
-    database_disconnection()
+    database_disconnection(mydb)
 
     return aggiustaUtenti(utenti)
 
@@ -869,10 +880,11 @@ def ottieniUtentiDaID(id):
     ]
     '''
 
-    database_connection()
+    mydb = database_connection()
+    mycursor = database_cursor(mydb)
     mycursor.execute(f'SELECT * FROM utenti WHERE id={str(id)}')
     utenti: list[list[str]] = mycursor.fetchall() # Potrei usare fetch e basta ma meh, meglio copia incolla ormai
-    database_disconnection()
+    database_disconnection(mydb)
 
     utenti = aggiustaUtenti(utenti)
     return utenti
