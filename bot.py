@@ -395,7 +395,7 @@ def getLink(update: Update, context: CallbackContext):
 
     robaAntiCrashPerEdit = update.message if update.message != None else update.edited_message
     
-    log(f"{update.message.from_user.name}, {update.message.from_user.id} ha fatto {robaAntiCrashPerEdit.text}")
+    log(f"{robaAntiCrashPerEdit.from_user.name}, {robaAntiCrashPerEdit.from_user.id} ha fatto {robaAntiCrashPerEdit.text}")
     
     if '<' in robaAntiCrashPerEdit.text or '>' in robaAntiCrashPerEdit.text:
         robaAntiCrashPerEdit.reply_text("Non puoi inserire < o > nel messaggio.")
@@ -404,9 +404,17 @@ def getLink(update: Update, context: CallbackContext):
     giorno = robaAntiCrashPerEdit.text.lower().replace('/linkpdf', '').strip()
 
     m = rFormatoData.match(giorno)
-    robaAntiCrashPerEdit.reply_text(
-        "\n\nTrovato un altro PDF con la stessa data:\n\n".join(variazioniFile.ottieniLinkPdf(giorno if m else "domani"))
-    )
+    
+    links = variazioniFile.ottieniLinkPdf(giorno if m else "oggi")
+    if links is None or links == []:
+        robaAntiCrashPerEdit.reply_text(
+            f"Non ho trovato nessun PDF per " + ((f"il {giorno}") if m else "oggi") + ". Prova a guardare sul sito:\n\nhttps://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/2017/09/15/",
+            disable_web_page_preview=True
+        )
+    else:
+        robaAntiCrashPerEdit.reply_text(
+            "\n\nTrovato un altro PDF con la stessa data:\n\n".join(links)
+        )
 
 ALIAS_GIORNI = ["","domani","oggi"]
 
