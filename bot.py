@@ -251,7 +251,7 @@ def ProfImpostato(update: Update, context: CallbackContext):
     else:
         mycursor.execute('UPDATE utenti SET prof=%s WHERE id=%s;',(messaggio,id,))
         log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{messaggio}\" alle {roboAntiCrashPerEdit.date}")
-        messaggio = f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
+        risposta = f"Hai impostato \"{roboAntiCrashPerEdit.text}\" come prof.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     
     con.commit()
     database_disconnection(con)
@@ -605,32 +605,33 @@ def accendiNotifiche(update: Update, context: CallbackContext):
     update.message.reply_text("Notifiche accese per tutti gli utenti")
 
 def cancellami(update: Update, context: CallbackContext):
-    id = update.message.from_user.id
-
+    robaAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
+    id = robaAntiCrashPerEdit.from_user.id
     global mycursor
 
     utenti = ottieniUtentiDaID(id)
 
     if len(utenti) == 0:
-        update.message.reply_text(f"Non hai una classe impostata. Se hai provato a cancellarti non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} non ha una classe. ({update.message.text}) Data e ora: {update.message.date}")
+        robaAntiCrashPerEdit.reply_text(f"Non hai una classe impostata. Se hai provato a cancellarti non credo tu voglia impostare una classe, ma nel dubbio si fa con /impostaClasse")
+        log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} non ha una classe. ({robaAntiCrashPerEdit.text}) Data e ora: {robaAntiCrashPerEdit.date}")
     else:
         mydb = database_connection()
-        mycursor = database_cursor(mydb)()
+        mycursor = database_cursor(mydb)
         mycursor.execute(f'DELETE FROM utenti WHERE id=\"{id}\";')
         mydb.commit()
         database_disconnection(mydb)
-        update.message.reply_text('Cancellato con successo dalla lista utenti del bot. Non riceverai più notifiche e per re-iscriverti dovrai rifare il comando /impostaClasse. (Le notifiche torneranno tutte attive)')
-        log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha rimosso il suo id dal database alle {update.message.date}")
+        robaAntiCrashPerEdit.reply_text('Cancellato con successo dalla lista utenti del bot. Non riceverai più notifiche e per re-iscriverti dovrai rifare il comando /impostaClasse. (Le notifiche torneranno tutte attive)')
+        log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha rimosso il suo id dal database alle {robaAntiCrashPerEdit.date}")
 
 def cambia_modalita(update: Update, context: CallbackContext):
-    id = update.message.from_user.id
-    log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha eseguito \"{update.message.text}\" alle {update.message.date}")
+    robaAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
+    id = robaAntiCrashPerEdit.from_user.id
+    log(f"{robaAntiCrashPerEdit.from_user['name']}, {robaAntiCrashPerEdit.from_user['id']} ha eseguito \"{robaAntiCrashPerEdit.text}\" alle {robaAntiCrashPerEdit.date}")
 
     utenti = ottieniUtentiDaID(id)
 
     if len(utenti) == 0: 
-        update.message.reply_text("Non sei registrato. /impostaClasse")
+        robaAntiCrashPerEdit.reply_text("Non sei registrato. /impostaClasse")
         return
 
     utente = utenti[0]
@@ -654,7 +655,7 @@ def cambia_modalita(update: Update, context: CallbackContext):
         
     database_disconnection(mydb)
     
-    update.message.reply_text(text=messaggio)
+    robaAntiCrashPerEdit.reply_text(text=messaggio)
 
 def impostaProf(update: Update, context: CallbackContext):
     robaAntiCrashPerEdit = update.message if update.message is not None else update.edited_message
