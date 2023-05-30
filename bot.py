@@ -550,7 +550,7 @@ def bottoneNotificaPremuto(update: Update, context: CallbackContext):
     risposta = ""
 
     con = database_connection()
-    mycursor = database_cursor(con)()
+    mycursor = database_cursor(con)
     if tipo_notifica == "mattina":
         mycursor.execute(f'UPDATE utenti SET notifiche_mattina = \"{str(not utente[3])}\" WHERE id=\"{utente[0]}\";')
         risposta = "Notifiche mattina " + ('accese.' if not utente[3] else 'spente.')
