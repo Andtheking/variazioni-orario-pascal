@@ -598,6 +598,10 @@ def spegniNotifiche(update: Update, context: CallbackContext):
     global MANDO
     MANDO = False
     
+    with open('Roba sensibile/settings.txt','w') as f:
+        f.write("0")
+    
+    
     update.message.reply_text("Notifiche spente per tutti gli utenti")
 
 def accendiNotifiche(update: Update, context: CallbackContext):
@@ -610,6 +614,10 @@ def accendiNotifiche(update: Update, context: CallbackContext):
 
     global MANDO
     MANDO = True
+    
+    with open('Roba sensibile/settings.txt','w') as f:
+        f.write("1")
+    
     update.message.reply_text("Notifiche accese per tutti gli utenti")
 
 def cancellami(update: Update, context: CallbackContext):
@@ -727,6 +735,17 @@ def impostaProf(update: Update, context: CallbackContext):
     
 
 def main():
+    if not os.path.exists('Roba sensibile/settings.txt'):
+        f = open('Roba sensibile/settings.txt','w')
+        f.write("1")
+        f.close()
+    
+    with open('Roba sensibile/settings.txt','r') as f:
+        global MANDO
+        val = f.readline()
+        MANDO = True if val == '1' else False
+    
+    
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
     
