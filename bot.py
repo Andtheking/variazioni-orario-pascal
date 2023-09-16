@@ -940,8 +940,7 @@ def check(bot):
     global lastcheck
 
     while True:
-        if not MANDO: # Se le notifiche sono spente 
-            continue  # Non fare nada.
+        
 
         Ok = False 
         while not Ok:
@@ -1031,7 +1030,9 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
             errore = True
             messaggioErrore = avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno <code>{giorno}</code>.\n\nEcco il link:\n{link.get('href', [])}"
         
-
+        if not MANDO: # Se le notifiche sono spente 
+            continue  # Non fare nada.
+        
         for utente in ottieni_utenti():
             classe = utente[2]
             modalita = utente[7].lower()
