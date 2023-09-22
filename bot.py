@@ -962,7 +962,7 @@ def check(bot):
             ottieni_info(bot=bot, soup=soup)
 
 def getGiorno(url: str):
-    url = url[url.rindex('/')+1:]
+    url = url[url.rindex('/')+1:].replace(".pdf","")
     test = url.split('-')
     del test[0:3]
     giorno = (test[0] if len(test[0]) > 1 else '0'+test[0]) + "-" + convertiMese(test[1].lower())

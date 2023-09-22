@@ -96,7 +96,7 @@ def CercaSostituto(sostituto: str, docentiAssenti: list[DocenteAssente]) -> list
 
     return variazioniClasse
 
-REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>[1-5][A-Z])\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
+REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>[1-5]([A-Z]|BIO))\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
 
 
 def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False, prof=False) -> list[str]:
@@ -173,28 +173,34 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
     
     pdfTextArray = pdfTextPolished.split('\n')
 
-    for i in range(0, len(pdfTextArray)-1, 2):
-        test1 = pdfTextArray[i] + pdfTextArray[i+1]
-        test2 = pdfTextArray[i-1] + pdfTextArray[i]
+    try:
+        for i in range(0, len(pdfTextArray)-1, 2):
+            test1 = pdfTextArray[i] + pdfTextArray[i+1]
+            test2 = pdfTextArray[i-1] + pdfTextArray[i]
 
-        try:
-            informazioni = re.match(REGEX_OUTPUT, test1).groupdict()
-        except:
-            informazioni = re.match(REGEX_OUTPUT, test2).groupdict()
+            try:
+                informazioni = re.match(REGEX_OUTPUT, test1).groupdict()
+            except:
+                informazioni = re.match(REGEX_OUTPUT, test2).groupdict()
 
-        for key, value in informazioni.items():
-            informazioni[key] = value.strip() if value != None else value
+            for key, value in informazioni.items():
+                informazioni[key] = value.strip() if value != None else value
 
-        docentiAssenti.append(
-            DocenteAssente(
-                informazioni['ora'],
-                informazioni['classe']+"("+informazioni['aula']+")",
-                informazioni['prof_assente'],
-                informazioni['sostituto_1'] + ' | ' +
-                informazioni["sostituto_2"],
-                informazioni["note"]
+            docentiAssenti.append(
+                DocenteAssente(
+                    informazioni['ora'],
+                    informazioni['classe']+"("+informazioni['aula']+")",
+                    informazioni['prof_assente'],
+                    informazioni['sostituto_1'] + ' | ' +
+                    informazioni["sostituto_2"],
+                    informazioni["note"]
+                )
             )
-        )
+            
+            if len(docentiAssenti) == 5:
+                pass
+    except:
+        pass
 
     return docentiAssenti
 
