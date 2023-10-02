@@ -96,7 +96,7 @@ def CercaSostituto(sostituto: str, docentiAssenti: list[DocenteAssente]) -> list
 
     return variazioniClasse
 
-REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>[1-5]([A-Z]|BIO))\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
+REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>(?:[1-5]([A-Z]|BIO))| POTENZIAMENTO)\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
 
 
 def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False, prof=False) -> list[str]:
@@ -170,7 +170,7 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
             if string != '':
                 pdfTextPolished += string + '\n'
         pass
-    
+
     pdfTextArray = pdfTextPolished.split('\n')
 
     try:
@@ -178,6 +178,11 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
             test1 = pdfTextArray[i] + pdfTextArray[i+1]
             test2 = pdfTextArray[i-1] + pdfTextArray[i]
 
+            if "POTENZIAMENTO" in test2:
+                test2 = test2[:test2.index("POTENZIAMENTO")+len("POTENZIAMENTO")] + "(.) " + test2[test2.index("POTENZIAMENTO")+len("POTENZIAMENTO")+1:-3]
+            if "POTENZIAMENTO" in test1:
+                test1 = test1[:test1.index("POTENZIAMENTO")+len("POTENZIAMENTO")] + "(.) " + test1[test1.index("POTENZIAMENTO")+len("POTENZIAMENTO")+1:-3]
+            
             try:
                 informazioni = re.match(REGEX_OUTPUT, test1).groupdict()
             except:
@@ -189,7 +194,7 @@ def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
             docentiAssenti.append(
                 DocenteAssente(
                     informazioni['ora'],
-                    informazioni['classe']+"("+informazioni['aula']+")",
+                    informazioni['classe']+("("+informazioni['aula']+")") if informazioni['aula'] != "(.)" else "",
                     informazioni['prof_assente'],
                     informazioni['sostituto_1'] + ' | ' +
                     informazioni["sostituto_2"],
@@ -296,7 +301,7 @@ def formattaGiorno(giorno):
     giorno = ('0' + giorno.split('-')[0] if not len(giorno.split('-')[0]) == 2 else giorno.split('-')[
               0]) + '-' + ('0' + giorno.split('-')[1] if not len(giorno.split('-')[1]) == 2 else giorno.split('-')[1])
     return giorno
-        
+
 def CancellaCartellaPdf():
     filelist = [f for f in os.listdir("pdfScaricati/")]
     for f in filelist:
@@ -304,4 +309,5 @@ def CancellaCartellaPdf():
 
 if __name__ == "__main__":
     #print(Main("4I"))
-    print(controllaVariazioniAuleClasse("4I","05-02"))
+    a = LeggiPdf("pdfScaricati/variazioni-orario-lunedi-2-ottobre-2023.pdf")
+    pass
