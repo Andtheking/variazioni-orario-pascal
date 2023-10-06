@@ -63,7 +63,7 @@ days = "|oggi|domani"
 #https://regex101.com/r/5s6yUW/1
 rVarClasse = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
 rVarProf = re.compile(r"(/variazioni) ?(\D+?\D+?)? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(?:0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
-rImp = re.compile(r"^[1-5](?:[a-z]|[A-Z])$")
+rImp = re.compile(r"^[1-5](?:[a-z]|[A-Z]|BIO)$")
 
 def database_connection() -> mysql.connector.MySQLConnection:
     
@@ -272,7 +272,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
     m = rImp.match(classeDaImpostare)
 
     if not m:
-        roboAntiCrashPerEdit.reply_text("Non hai inserito una classe valida (1-5A-Z o 1-5a-z)")
+        roboAntiCrashPerEdit.reply_text("Non hai inserito una classe valida (1-5A-Z o 1-5a-z o 1BIO)")
         return 
     
     utenti = ottieniUtentiDaID(id=id)
