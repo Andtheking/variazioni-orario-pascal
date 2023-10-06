@@ -61,7 +61,7 @@ def schedule_checker():
 days = "|oggi|domani"
 
 #https://regex101.com/r/5s6yUW/1
-rVarClasse = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|[A-Z]))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
+rVarClasse = re.compile(r"(/variazioni) ?([1-5](?:[a-z]|bio))? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
 rVarProf = re.compile(r"(/variazioni) ?(\D+?\D+?)? ?(\b(?:(?:0[1-9]|[1-9])|[12][0-9]|3[01])\b(?:-|\/)\b(?:(?:0[1-9]|[1-9])|1[0-2])\b"+days+")?$")
 rImp = re.compile(r"^[1-5](?:[a-z]|[A-Z]|BIO)$")
 
@@ -298,7 +298,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
                          ''',
                          (classeDaImpostare,str(id),)
                          )
-        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato classe in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
         risposta = f"Avevi già una classe impostata (<code>{utenti[0][2]}</code>). Ho impostato la classe <code>{classeDaImpostare}</code>.\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
     else:
         mycursor.execute('''
@@ -308,7 +308,7 @@ def ClasseImpostata(update: Update, context: CallbackContext):
                          ''',
                          (classeDaImpostare,id,)
                          )
-        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato prof in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
+        log(f"{roboAntiCrashPerEdit.from_user['name']}, {roboAntiCrashPerEdit.from_user['id']} ha cambiato classe in \"{classeDaImpostare}\" alle {roboAntiCrashPerEdit.date}")
         risposta = f"Hai impostato la classe \"{roboAntiCrashPerEdit.text}\".\n\nRiceverai una notifica alle 6.30 ogni mattina e alle 21:00 ogni sera con le variazioni orario. Per non ricevere più notifiche: /gestiscinotifiche"
         
     con.commit()
@@ -434,7 +434,7 @@ def variazioni(update: Update, context: CallbackContext):
         robaAntiCrashPerEdit.reply_text("Non puoi inserire < o > nel messaggio.")
         return
     
-    m = rVarClasse.match(robaAntiCrashPerEdit.text) # deve matchare questo: https://regex101.com/r/fCC5e3/1
+    m = rVarClasse.match(robaAntiCrashPerEdit.text.lower()) # deve matchare questo: https://regex101.com/r/fCC5e3/1
     
     prof = False
     if not m:
