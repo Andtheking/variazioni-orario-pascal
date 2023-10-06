@@ -285,8 +285,27 @@ def controllaVariazioniAuleClasse(classe: str, giorno: str, lista = None):
 def leggiTutteVariazioniAule():
     soup = BeautifulSoup(requests.get(URL).content, "html.parser")
     lista: list[bs4.Tag] = soup.select(
-        "p > span", attrs={"style": "color: #ff0000"})
-        
+        "p > span", attrs={"style": "color: #ff0000"}
+        )
+    
+    lista.extend(
+        soup.select(
+            "div > b", attrs={"style": "color: #ff0000"}
+        )
+    )
+    
+    lista.extend(
+        soup.select(
+            "p > b", attrs={"style": "color: #ff0000"}
+        )
+    )
+    
+    lista.extend(
+        soup.select(
+            "p > strong > span", attrs={"style": "color: #ff0000"}
+        )
+    )
+    
     return lista
 
 def formattaGiorno(giorno):
@@ -309,5 +328,9 @@ def CancellaCartellaPdf():
 
 if __name__ == "__main__":
     #print(Main("4I"))
-    a = LeggiPdf("pdfScaricati/variazioni-orario-lunedi-2-ottobre-2023.pdf")
+    # a = LeggiPdf("pdfScaricati/variazioni-orario-lunedi-2-ottobre-2023.pdf")
+    a = leggiTutteVariazioniAule()
+    
+    for i in a:
+        print (i.text)
     pass
