@@ -1026,8 +1026,9 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
         
         try: # try in caso la lettura del PDF fallisce
             variazioniOrario = variazioniFile.LeggiPdf(pdfPath)
-        except:
+        except Exception as e:
             errore = True
+            log(f"Errore: {e}", bot=bot)
             messaggioErrore = avviso+f"Qualcosa è andato storto nella lettura del pdf del giorno <code>{giorno}</code>.\n\nEcco il link:\n{link.get('href', [])}"
         
         if not MANDO: # Se le notifiche sono spente 

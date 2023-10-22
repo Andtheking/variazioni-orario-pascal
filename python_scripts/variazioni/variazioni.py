@@ -329,8 +329,4 @@ def CancellaCartellaPdf():
 if __name__ == "__main__":
     #print(Main("4I"))
     # a = LeggiPdf("pdfScaricati/variazioni-orario-lunedi-2-ottobre-2023.pdf")
-    a = leggiTutteVariazioniAule()
-    
-    for i in a:
-        print (i.text)
-    pass
+    print(Main("Olandese","domani",prof=True))
