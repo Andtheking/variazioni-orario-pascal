@@ -994,6 +994,8 @@ def ottieni_info(bot: Bot, soup = None): # Viene invocato se la pagina risulta e
     for link in links: # Controlla tutti i link nella pagina
         if ('.pdf' not in link.get('href', [])): # Se è un pdf
             continue
+        if ("aule" in link.get('href', [])):
+            continue
 
         pdfName = link.get('href',[])[link.get('href',[]).rindex("/")+1:]
         log("Downloading file: " + f"\"{pdfName}\"")
