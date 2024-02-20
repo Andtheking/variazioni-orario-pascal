@@ -1091,7 +1091,7 @@ def send_logs(update: Update, context: CallbackContext):
                 name = f"pascalBotLog {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
                 update.message.reply_document(document=f,filename=name)
                 
-            with open("python_scripts/variazioni/log2.txt","rb") as f:
+            with open("log2.txt","rb") as f:
                 name = f"pascalBotLog2 {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
                 update.message.reply_document(document=f,filename=name)
         except Exception as e:
