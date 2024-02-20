@@ -487,9 +487,9 @@ def MandaVariazioni(bot: Bot, daCercare: str, giorno: str, chatId: int, prof=Fal
     except Exception as e:
         # robaAntiCrashPerEdit.reply_text('Messaggio non valido. Il formato è: /variazioni 3A GIORNO-MESE (giorno e mese a numero)')
         try: # Se l'utente ha bloccato il bot esplode tutto
+            log(f'{str(e)}')
             bot.send_message(chat_id=chatId,text="Qualcosa è andato storto, whoops. Nel dubbio riprova")
             bot.send_message(chat_id = ID_CANALE_LOG, text=f'{str(e)}')
-            log(f'{str(e)}')
         except:
             pass
 
@@ -1086,9 +1086,17 @@ def send_logs(update: Update, context: CallbackContext):
     
     id = update.message.from_user.id
     if id in ADMINS:
-        with open("log.txt","rb") as f:
-            name = f"pascalBotLog {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
-            update.message.reply_document(document=f,filename=name)
+        try:
+            with open("log.txt","rb") as f:
+                name = f"pascalBotLog {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
+                update.message.reply_document(document=f,filename=name)
+                
+            with open("python_scripts/variazioni/log2.txt","rb") as f:
+                name = f"pascalBotLog2 {datetime.datetime.now().strftime(r'%Y-%m-%d %H;%M;%S')}.txt"
+                update.message.reply_document(document=f,filename=name)
+        except Exception as e:
+            log(e)
+            pass
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha preso i log alle {update.message.date}")
     else:
         log(f"{update.message.from_user['name']}, {update.message.from_user['id']} ha provato ad accedere ai log alle {update.message.date}")

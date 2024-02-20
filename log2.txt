@@ -1,0 +1,5 @@
+2024/02/20 21:22:43,830942 - [Errno 2] No such file or directory: 'pdfScaricati/variazioni-orario-mercoledi-21-febbraio-2024.pdf'
+2024/02/20 21:23:30,908665 - [Errno 2] No such file or directory: 'pdfScaricati/variazioni-orario-mercoledi-21-febbraio-2024.pdf'
+2024/02/20 21:24:03,628035 - [Errno 2] No such file or directory: 'pdfScaricati/variazioni-orario-mercoledi-21-febbraio-2024.pdf'
+2024/02/20 21:24:48,591622 - [Errno 2] No such file or directory: 'pdfScaricati/variazioni-orario-mercoledi-21-febbraio-2024.pdf'
+2024/02/20 21:25:27,056912 - [Errno 2] No such file or directory: 'pdfScaricati/variazioni-orario-mercoledi-21-febbraio-2024.pdf'

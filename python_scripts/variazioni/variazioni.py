@@ -117,13 +117,17 @@ def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedel
     variazioni = []
     for link in linkPdf:
         percorsiPdf = f'pdfScaricati/{link[link.rindex("/")+1:]}'
-
+        
+        if not os.path.exists(percorsiPdf):
+            scaricaPdf(link)
+        
         semaforo.acquire()
         try:
             docentiAssenti = LeggiPdf(percorsiPdf)
-        except:
+        except Exception as e:
             semaforo.release()
             variazioni.append(f"Qualcosa è andato storto nella lettura del pdf del giorno {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}.\n\nEcco il link:\n{link}")
+            log(e)
             continue
         semaforo.release()
         
@@ -150,6 +154,14 @@ def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedel
                 )
             )
     return "\n\nTrovato un altro PDF con la stessa data:\n".join(variazioni)
+
+def log(mex):
+    try:
+        with open('log2.txt','a') as f:
+            f.write(datetime.datetime.now().strftime(r"%Y/%m/%d %H:%M:%S,%f") + f" - {mex}\n")
+    except:
+        with open('log2.txt','a') as f:
+            f.write(datetime.datetime.now().strftime(r"%Y/%m/%d %H:%M:%S,%f") + f" - {mex}\n")
 
 def LeggiPdf(percorsoPdf) -> list[DocenteAssente]:
     docentiAssenti: list[DocenteAssente] = []
