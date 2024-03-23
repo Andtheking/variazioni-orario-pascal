@@ -99,22 +99,25 @@ def CercaSostituto(sostituto: str, docentiAssenti: list[DocenteAssente]) -> list
 REGEX_OUTPUT = r"^(?P<ora>[1-6])(?P<classe>(?:[1-5]([A-Z]|BIO))| POTENZIAMENTO)\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
 
 
-def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False, prof=False) -> list[str]:
-    giorno = formattaGiorno(giorno)
+def Main(daCercare: str, giorno: str = (datetime.datetime.now()+datetime.timedelta(days=1)).strftime("%d-%m"), onlyLink=False, prof=False, linkTest=False) -> list[str]:
 
-    if (onlyLink):
-        l = ottieniLinkPdf(giorno)
-        if l != None:
-            return "\n\n".join(l)
-        else:
-            f"Non è stata pubblicata nessuna variazione orario per il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}"
+    if not linkTest:
+        giorno = formattaGiorno(giorno)
+        if (onlyLink):
+            l = ottieniLinkPdf(giorno)
+            if l != None:
+                return "\n\n".join(l)
+            else:
+                f"Non è stata pubblicata nessuna variazione orario per il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}"
 
-    linkPdf = ottieniLinkPdf(giorno)
+        linkPdf = ottieniLinkPdf(giorno)
 
-    if linkPdf == None:
-        return f"Non è stata pubblicata nessuna variazione orario per il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}"
+        if linkPdf == None:
+            return f"Non è stata pubblicata nessuna variazione orario per il {OPEN_FORMAT_SYMBOL}{giorno}{CLOSE_FORMAT_SYMBOL}"
 
     variazioni = []
+    if linkTest:
+        linkPdf = [giorno,]
     for link in linkPdf:
         percorsiPdf = f'pdfScaricati/{link[link.rindex("/")+1:]}'
         
@@ -341,4 +344,5 @@ def CancellaCartellaPdf():
 if __name__ == "__main__":
     #print(Main("4I"))
     # a = LeggiPdf("pdfScaricati/variazioni-orario-lunedi-2-ottobre-2023.pdf")
-    print(Main("Olandese","domani",prof=True))
+    # print(Main("5I","https://www.ispascalcomandini.it/wp-content/uploads/2017/09/variazioni-orarie-lunedi-25-marzo.pdf", linkTest=True))
+    print(Main("5I","25-03", linkTest=False))
