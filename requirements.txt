@@ -1,7 +1,0 @@
-beautifulsoup4==4.11.2
-mysql_connector_repackaged==0.3.1
-numpy==1.22.3
-PyPDF2==3.0.1
-requests==2.27.1
-schedule==1.1.0
-telegram==0.0.1

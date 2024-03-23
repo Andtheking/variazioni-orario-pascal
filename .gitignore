@@ -1,8 +1,2 @@
-Roba sensibile/
-Roba sensibile/*
-__pycache__/
-__pycache__/*
-pdfScaricati
-pdfScaricati/*
-log.txt
-sent_pdfs.txt
+old/*
+sensible/*
