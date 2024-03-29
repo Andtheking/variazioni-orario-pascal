@@ -27,11 +27,15 @@ from telegram.constants import (
 )
 #endregion
 
-from string import ascii_uppercase, ascii_lowercase, digits
+# Librerie esterne
+import re
 
-from db import queryGet, queryGetSingleValue, queryInsert
-from jsonUtils import fromJSON
-from log import log, send_logs_channel
+# Moduli interni
+from utils.db import queryGet, queryGetSingleValue, queryNoReturn
+from utils.jsonUtils import fromJSON
+from utils.log import log, send_logs_channel
+
+
 
 TOKEN = fromJSON('sensible/utils.json')['token']  # TOKEN DEL BOT
 CANALE_LOG = fromJSON('sensible/utils.json')['canale_log'] # Se vuoi mandare i log del bot in un canale telegram, comodo a parere mio.
@@ -47,78 +51,80 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE): # /help
 
 # Segnala quando il bot crasha, con motivo del crash
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await log(f'Update "{update}" caused error "{context.error}"',context.bot, "error")
+    log(f'Update "{update}" caused error "{context.error}"',context.bot, "error")
 
-# Questa funzione sarà eseguita prima di tutte le altre e per ogni messaggio che non è un comando
-async def doAlways(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    message = update.effective_message
-    
-    if message.text[0] == '/':
-        await log(f"{user.name} ha eseguito {message.text} alle {message.date}")
-        
-    # TODO: Se cambia qualcosa del profilo tg, il bot lo aggiorna
-    if user is not None and len(queryGet(f"SELECT id FROM utenti WHERE id = ?;",(user.id,))) == 0:
-        queryGet(f"INSERT INTO utenti (id, username) VALUES (?,?);",(user.id,user.name))
-        await log(f"Inserito nel DB il seguente utente: {user.id},{user.name}", context.bot)
-    
-    return user,message
+def cancel(action: str): 
+    async def thing(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user,message = await doAlways(update,context)
+        await message.reply_text(f"Ok, azione \"{action}\" annullata")
+        return ConversationHandler.END
+    return thing
 
 
-async def impostaClasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user,message = await doAlways(update,context)
-    inpt = context.matches[0].group(1) # Non serve controllo perché qua entra solo se è matchato
-    
-    if queryGetSingleValue("""--sql
-        SELECT COUNT(*) 
-        FROM utenti
-        WHERE id = ? AND modalita = 'studente';
-    """,(user.id,)) == 0:
-        await message.reply_text("Devi essere in modalità studente. /modalita")
-        return
+def setup_class_conv():
+    imposta_classe_conv_entry = MessageHandler(filters.Regex(re.compile(r"^[!.\/]impostaClasse$",re.IGNORECASE)),impostaClasseConversation)
+    imposta_classe_conv = ConversationHandler(
+        entry_points=[imposta_classe_conv_entry],
+        states={
+            1: [
+                MessageHandler(filters.Regex(re.compile(r"^([1-5][A-Z])$",re.IGNORECASE)),setClass),
+            ]
+        },
+        fallbacks=[
+            MessageHandler(filters.Regex(CANCEL_REGEX),cancel("imposta classe")), 
+            MessageHandler(filters.TEXT & ~filters.COMMAND,class_format_error)
+        ]
+    )
+    return imposta_classe_conv
 
-    queryInsert("""--sql
-        UPDATE utenti
-        SET classe = ?
-        WHERE id = ?;
-    """,(inpt,user.id))
-    await message.reply_text(f"Aggiunto in modalità studente con classe impostata a: {inpt}")
+def setup_prof_conv():
+    imposta_prof_conv_entry = MessageHandler(filters.Regex(re.compile(r"^[!.\/]impostaProf$",re.IGNORECASE)),impostaProfConversation)
+    imposta_prof_conv = ConversationHandler(
+        entry_points=[imposta_prof_conv_entry],
+        states={
+            1: [
+                MessageHandler(filters.Regex(re.compile(r"^(.+)$",re.IGNORECASE)),setProf),
+            ]
+        },
+        fallbacks=[
+            MessageHandler(filters.Regex(CANCEL_REGEX),cancel("imposta prof"))
+        ]
+    )
+    return imposta_prof_conv
 
-async def impostaClasseConversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
 
-import re
+# Commands
+from commands.impostaClasse import setClass, impostaClasse, impostaClasseConversation, class_format_error
+from commands.impostaProf import setProf, impostaProf, impostaProfConversation
+
+from commands.modalita import modalita
+
+from commands.doAlways import doAlways
+
+CANCEL_REGEX = re.compile(r"^[!.\/]cancel$",re.IGNORECASE)
+
+bot = None
+
 def main():
     # Avvia il bot
     application = Application.builder().token(TOKEN).build() # Se si vuole usare la PicklePersistance bisogna aggiungere dopo .token(TOKEN) anche .persistance(OGGETTO_PP)
 
-    imposta_classe = MessageHandler(filters.Regex(re.compile(r"[!.\/]impostaClasse\s+([1-5][A-Z])",re.IGNORECASE)),impostaClasse)
+    handlers = {
+        "impostaClasse": MessageHandler(filters.Regex(re.compile(r"^[!.\/]impostaClasse\s+([1-5][A-Z])$",re.IGNORECASE)),impostaClasse),
+        "impostaProf": MessageHandler(filters.Regex(re.compile(r"^[!.\/]impostaProf\s+(.+)$",re.IGNORECASE)),impostaProf),
+        "modalita": MessageHandler(filters.Regex(re.compile(r"^[!.\/]modalit[aà]$")),modalita),
+        "impostaClasseConversation": setup_class_conv(),
+        "impostaProfConversation": setup_prof_conv(),
+    }
     
-    application.add_handler(imposta_classe,0)
+    for v in handlers.values():
+        application.add_handler(v,0)
     
     application.add_handler(CommandHandler("start", start)) # Aggiungi un command handler, stessa cosa per i conversation handler
     application.add_handler(CommandHandler("help", help))
     
-    
-    application.add_handler(MessageHandler(filters=filters.ALL & ~filters.COMMAND, callback=doAlways),1)
-    
-    # imposta_classe_conv = ConversationHandler(
-    #     entry_points=[CommandHandler("impostaClasse", impostaClasse)],
-    #     states={
-    #         0: [MessageHandler(filters.TEXT & ~ filters.COMMAND, ClasseImpostata)],
-    #     },
-    #     fallbacks=[CommandHandler('cancel', cancel)],
-    # )
-
-    # imposta_prof = ConversationHandler(
-    #     entry_points=[CommandHandler("impostaProf", impostaProf)],
-    #     states={
-    #         0: [MessageHandler(filters.TEXT & ~ filters.COMMAND, ProfImpostato)],
-    #     },
-    #     fallbacks=[CommandHandler('cancel', cancel)],
-    # )
-    
-    
+    # Se non cadi in nessun handler, vieni qui
+    application.add_handler(MessageHandler(filters=filters.ALL, callback=doAlways),1)
     
     application.add_error_handler(error) # Definisce la funzione che gestisce gli errori
     
@@ -128,6 +134,9 @@ def main():
         callback=send_logs_channel,
         interval=60
     )
+    
+    global bot
+    bot = application.bot
     application.run_polling() # Avvia il polling: https://blog.neurotech.africa/content/images/2023/06/telegram-polling-vs-webhook-5-.png 
     
 # Stabilisce che il codice sarà avviato solo quando il file è aperto direttamente, e non da un altro programma

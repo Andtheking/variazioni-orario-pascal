@@ -1,5 +1,5 @@
 import sqlite3
-from jsonUtils import fromJSON
+from .jsonUtils import fromJSON
 
 DB_PATH = fromJSON("sensible/utils.json")['db_path']
 
@@ -13,7 +13,7 @@ def queryGet(query: str, parameters = ()):
         return res
     return connection(query, parameters, x)
 
-def queryInsert(query: str, parameters = ()):
+def queryNoReturn(query: str, parameters = ()):
     return connection(query, parameters)
 
 def queryGetSingleValue(query: str, parameters = ()):

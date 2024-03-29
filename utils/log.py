@@ -1,13 +1,15 @@
 import logging
 import os
+import inspect
 
 from datetime import datetime
 
 from telegram.ext import ExtBot, ContextTypes
 from telegram.constants import ParseMode
 
-from jsonUtils import fromJSON
-import inspect
+
+from .jsonUtils import fromJSON, toJSON
+
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -16,22 +18,27 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
-logQueue = []
 
-async def log(message: str, bot: ExtBot = None, tipo: str = "info"):
+
+def log(message: str, send_with_bot:bool = False, tipo: str = "info", only_file=False):
     now = datetime.now()
     
-    if tipo == "errore":
-        logger.error(message)
-    else: #if tipo == "info":
-        logger.info(message)
-        
+    if not only_file:
+        if tipo == "errore":
+            logger.error(message)
+        elif tipo == "warning":
+            logger.warning(message)
+        else: #if tipo == "info":
+            logger.info(message)
+            
         
     messageForFile = f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] - {inspect.stack()[1].filename} - " + message + "\n"
     messageForBot = message
     
-    if bot is not None and fromJSON('sensible/utils.json')["canale_log"] is not None:
-        logQueue.append(f"#{bot.name.replace('@','').upper()} #{tipo.upper()}\n" + messageForBot)
+    logQueue = fromJSON('logQueue.json')
+    if send_with_bot and fromJSON('sensible/utils.json')["canale_log"] is not None:
+        logQueue.append(f"#{tipo.upper()}\n" + messageForBot)
+        toJSON('logQueue.json',logQueue)
         
     m = 'a'
     if not os.path.exists("./log.txt"):
@@ -41,10 +48,12 @@ async def log(message: str, bot: ExtBot = None, tipo: str = "info"):
         f.write(messageForFile)
     
 async def send_logs_channel(context: ContextTypes.DEFAULT_TYPE):
+    logQueue = fromJSON('logQueue.json')
+    
     if len(logQueue) == 0:
         return
     
-    mex = f"LOG RECAP\n\n"
+    mex = f"#{context.bot.name.replace('@','').upper()} LOG RECAP\n\n"
     while len(logQueue) != 0:
         mex += logQueue.pop()+"\n\n--- Un altro log trovato ---\n\n"
     mex = mex[:len(mex)-len("\n\n--- Un altro log trovato ---\n\n")]
@@ -52,3 +61,5 @@ async def send_logs_channel(context: ContextTypes.DEFAULT_TYPE):
     while len(mex) > 0:
         await context.bot.send_message(fromJSON('sensible/utils.json')["canale_log"], mex, parse_mode=ParseMode.HTML)
         mex = mex[4095:]
+        
+    toJSON('logQueue.json',logQueue)
