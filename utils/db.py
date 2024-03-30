@@ -1,7 +1,7 @@
 import sqlite3
-from .jsonUtils import fromJSON
+from .jsonUtils import fromJSONFile
 
-DB_PATH = fromJSON("sensible/utils.json")['db_path']
+DB_PATH = fromJSONFile("sensible/utils.json")['db_path']
 
 
 

@@ -5,7 +5,7 @@ import sys
 import os
 from pathlib import Path
 
-from pdf_hash import get_pdf_hash
+from .pdf_hash import get_pdf_hash
 # Ottieni il percorso della directory corrente (dove si trova read_pdf.py)
 current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -14,7 +14,7 @@ sys.path.append(str(utils_dir.resolve()))
 #endregion
 
 from utils.log import log
-from utils.jsonUtils import toJSON, fromJSON
+from utils.jsonUtils import toJSONFile, fromJSONFile, toJSON
 
 def LeggiPDF(pdf_path):
     REGEX = r"^(?P<ora>[1-6])\s*(?P<classe>(?:[1-5]([A-Z]|BIO))| POTENZIAMENTO)\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
@@ -38,12 +38,13 @@ def LeggiPDF(pdf_path):
     return api_output
 
 def PDFJson(pdf_path):
-    x = fromJSON('variazioni.json', r'{}')
+    x = fromJSONFile('variazioni.json', r'{}')
     hsh = get_pdf_hash(pdf_path)
     if not hsh in x:
         log('Nuovo pdf')
         x.update({hsh: LeggiPDF(pdf_path)})
-        toJSON('variazioni.json',x)
+        toJSONFile('variazioni.json',x)
+    return x[hsh]
 
 if __name__ == '__main__':
     PDFJson(__file__[:__file__.rindex('\\')+1] + 'pdf.pdf')

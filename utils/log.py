@@ -8,7 +8,7 @@ from telegram.ext import ExtBot, ContextTypes
 from telegram.constants import ParseMode
 
 
-from .jsonUtils import fromJSON, toJSON
+from .jsonUtils import fromJSONFile, toJSONFile
 
 
 
@@ -35,10 +35,10 @@ def log(message: str, send_with_bot:bool = False, tipo: str = "info", only_file=
     messageForFile = f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] - {inspect.stack()[1].filename} - " + message + "\n"
     messageForBot = message
     
-    logQueue = fromJSON('logQueue.json')
-    if send_with_bot and fromJSON('sensible/utils.json')["canale_log"] is not None:
+    logQueue = fromJSONFile('logQueue.json')
+    if send_with_bot and fromJSONFile('sensible/utils.json')["canale_log"] is not None:
         logQueue.append(f"#{tipo.upper()}\n" + messageForBot)
-        toJSON('logQueue.json',logQueue)
+        toJSONFile('logQueue.json',logQueue)
         
     m = 'a'
     if not os.path.exists("./log.txt"):
@@ -48,7 +48,7 @@ def log(message: str, send_with_bot:bool = False, tipo: str = "info", only_file=
         f.write(messageForFile)
     
 async def send_logs_channel(context: ContextTypes.DEFAULT_TYPE):
-    logQueue = fromJSON('logQueue.json')
+    logQueue = fromJSONFile('logQueue.json')
     
     if len(logQueue) == 0:
         return
@@ -59,7 +59,7 @@ async def send_logs_channel(context: ContextTypes.DEFAULT_TYPE):
     mex = mex[:len(mex)-len("\n\n--- Un altro log trovato ---\n\n")]
     
     while len(mex) > 0:
-        await context.bot.send_message(fromJSON('sensible/utils.json')["canale_log"], mex, parse_mode=ParseMode.HTML)
+        await context.bot.send_message(fromJSONFile('sensible/utils.json')["canale_log"], mex, parse_mode=ParseMode.HTML)
         mex = mex[4095:]
         
-    toJSON('logQueue.json',logQueue)
+    toJSONFile('logQueue.json',logQueue)

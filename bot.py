@@ -32,13 +32,13 @@ import re
 
 # Moduli interni
 from utils.db import queryGet, queryGetSingleValue, queryNoReturn
-from utils.jsonUtils import fromJSON
+from utils.jsonUtils import fromJSONFile
 from utils.log import log, send_logs_channel
 
 
 
-TOKEN = fromJSON('sensible/utils.json')['token']  # TOKEN DEL BOT
-CANALE_LOG = fromJSON('sensible/utils.json')['canale_log'] # Se vuoi mandare i log del bot in un canale telegram, comodo a parere mio.
+TOKEN = fromJSONFile('sensible/utils.json')['token']  # TOKEN DEL BOT
+CANALE_LOG = fromJSONFile('sensible/utils.json')['canale_log'] # Se vuoi mandare i log del bot in un canale telegram, comodo a parere mio.
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE): # /start
     await doAlways(update,context)
@@ -101,10 +101,20 @@ from commands.modalita import modalita
 
 from commands.doAlways import doAlways
 
+from api.main import main as mainPdf
+
 CANCEL_REGEX = re.compile(r"^[!.\/]cancel$",re.IGNORECASE)
 
 bot = None
 
+async def var(u: Update,c: ContextTypes.DEFAULT_TYPE):
+    user,message = await doAlways(u,c)
+    
+    x = mainPdf('03-04')
+    for c in x:
+        for i in c:
+            if i['classe'] == '5I':
+                await message.reply_text('c ' +i['prof_assente'])
 def main():
     # Avvia il bot
     application = Application.builder().token(TOKEN).build() # Se si vuole usare la PicklePersistance bisogna aggiungere dopo .token(TOKEN) anche .persistance(OGGETTO_PP)
@@ -120,6 +130,7 @@ def main():
     for v in handlers.values():
         application.add_handler(v,0)
     
+    application.add_handler(CommandHandler('variazioni',var))
     application.add_handler(CommandHandler("start", start)) # Aggiungi un command handler, stessa cosa per i conversation handler
     application.add_handler(CommandHandler("help", help))
     

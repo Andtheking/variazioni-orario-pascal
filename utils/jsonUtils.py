@@ -4,14 +4,17 @@ from threading import Semaphore
 semScrittura = Semaphore(1)
 sem = Semaphore(1)
 
-def toJSON(file: str, obj):
+def toJSONFile(file: str, obj):
     semScrittura.acquire()
     with open(file,"w",encoding="utf8") as f:
         f.write(jsonpickle.encode(obj))
     semScrittura.release()
+      
+def toJSON(obj):
+    return jsonpickle.encode(obj)
         
 l = 0
-def fromJSON(file: str, ifFileEmpty = "[]"):
+def fromJSONFile(file: str, ifFileEmpty = "[]"):
     global l
     
     sem.acquire()
