@@ -1,0 +1,6 @@
+__pycache__
+secret/*
+log*
+pdfs/
+.vscode
+variazioni.json
