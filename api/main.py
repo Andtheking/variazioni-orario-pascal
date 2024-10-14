@@ -8,6 +8,10 @@ def variazioni_by_date(date=None):
                   timedelta(days=1)).strftime("%d-%m")
         
     paths = allPdfsByDate(date)
+    
+    if not paths:
+        return None
+    
     x = []
     for p in paths:
         x.append(PDFJson(p))
@@ -17,7 +21,8 @@ def variazioni_by_date(date=None):
 def search_class(json, classe):
     output = []
     for pdf in json:
-        output.extend([record for record in pdf if record['classe'] == classe])
+        # Uso append e non extend per separare i vari pdf diversi in elementi diversi della lista
+        output.append([record for record in pdf if record['classe'] == classe])
     return output
 
 if __name__ == "__main__":

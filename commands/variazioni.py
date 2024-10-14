@@ -1,5 +1,6 @@
 from requirements import *
 from api.main import variazioni_by_date, search_class
+from datetime import datetime, timedelta
 
 async def variazioni(update: Update, context: ContextTypes.DEFAULT_TYPE):
     re_date = re.compile(r"\d{1,2}[\/-]\d{1,2}")
@@ -9,11 +10,40 @@ async def variazioni(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = context.matches[0].groupdict()['params'].strip()
     
     # print(context.matches[0].groupdict())
-    date = (re_date.findall(text) or [None])[0]
+    date = (re_date.findall(text) or [(datetime.now() + timedelta(days=1)).strftime("%d-%m")])[0]
     classe = (re_classe.findall(text) or [None])[0]
     prof = (re_prof.findall(text) or [None])[0]
     
-    sep_char = re.search(r'[^0-9]', date).group(0)  # Trova il separatore
-    date = sep_char.join(part.zfill(2) for part in date.split(sep_char))
+    if date:
+        sep_char = re.search(r'[^0-9]', date).group(0)  # Trova il separatore
+        date = sep_char.join(part.zfill(2) for part in date.split(sep_char))
 
-    await rispondi(update.effective_message, search_class(variazioni_by_date(date=date),classe))
+    variazioni_giornata = variazioni_by_date(date=date)
+    
+    if not variazioni_giornata:
+        await rispondi(update.effective_message, f"Non ho trovato nessun PDF per il {date}.")
+        return
+    
+    variazioni_classe = search_class(variazioni_giornata, classe)
+    
+    if len(variazioni_classe) > 0:
+        await rispondi(update.effective_message, f"Variazioni orario per la <code>{classe}</code> il <code>{date}</code>\n\n{format_output(variazioni_classe)}")
+    else:
+        await rispondi(update.effective_message, f"Non ho trovato nessuna variazione per la <code>{classe}</code> per il <code>{date}</code>.")
+        
+# TODO Rendere più carino il messaggio, emoji?
+def format_output(json):
+    output = ""
+    for i,pdf in enumerate(json):
+        if i > 0:
+            output += "Ho trovato un altro PDF\n\n"
+        for variazione in pdf:
+            output += (
+                f"Prof assente: <code>{variazione['prof_assente']}</code>\n"
+                f"Ora: <code>{variazione['ora']}</code>\n"
+                f"Sostituto: <code>{variazione['sostituto_1'] or '-'} e {variazione['sostituto_2'] or '-'}</code>\n"
+                f"Classe(Aula): <code>{variazione['classe']}({variazione['aula']})</code>\n"
+                f"Note: <code>{variazione['note']}</code>\n\n"
+            )
+    
+    return output.strip()

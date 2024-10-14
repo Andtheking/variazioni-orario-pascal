@@ -38,6 +38,10 @@ def scaricaPdf(link: str) -> str:
 def allPdfsByDate(date):
     links = ottieniLinkPdfs(date)
     local_paths = []
+    
+    if not links:
+        return None
+    
     for link in links:
         local_paths.append(scaricaPdf(link))
     return local_paths

@@ -18,7 +18,7 @@ def LeggiPDF(pdf_path):
         for line in lines:
             m = re.search(REGEX, line)
             if m:
-                api_output.append(m.groupdict())
+                api_output.append({key: value.strip() for key, value in m.groupdict().items()})
                 i+=1
         if len(lines) != i+2:
             log("C'è un problema con i PDF.",tipo='warning', send_with_bot=True) 
