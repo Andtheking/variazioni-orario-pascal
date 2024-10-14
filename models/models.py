@@ -35,6 +35,7 @@ class Variazione(BaseModel):
     pagamento = TextField(null=True, unique=False)
     note = TextField(null=True, unique=False)
     pdf = ForeignKeyField(Pdf, backref='variazioni')  # Colonna per il pdf da cui è stata estrapolata la variazione
+    hash_variazione = TextField(unique=False)
     
 class Chat(BaseModel):
     id = IntegerField(primary_key=True)

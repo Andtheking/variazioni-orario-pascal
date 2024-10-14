@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from .get_pdf import allPdfsByDate
-from .read_pdf import PDFJson, PDF_db
+from .read_pdf import PDF_db
     
 from models.models import Pdf
 
@@ -16,7 +16,7 @@ def variazioni_by_date(date=None) -> list[Pdf]:
     
     x = []
     for p in paths:
-        x.append(PDF_db(p))
+        x.append(PDF_db(p, date))
 
     return x
 

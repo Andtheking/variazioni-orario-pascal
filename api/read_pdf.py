@@ -37,7 +37,7 @@ def PDFJson(pdf_path):
         toJSONFile('variazioni.json',x)
     return x[hsh]
 
-def PDF_db(pdf_path):
+def PDF_db(pdf_path, date):
     hsh = get_pdf_hash(pdf_path)
     pdf = Pdf.get_or_none(Pdf.pdf_hash_key == hsh)
     
@@ -57,7 +57,17 @@ def PDF_db(pdf_path):
                 sostituto_2 = variazione['sostituto_2'],
                 pagamento = variazione['pagamento'],
                 note = variazione['note'],
-                pdf = pdf
+                pdf = pdf,
+                hash_variazione = hash(
+                    (variazione['ora'] or '') + 
+                    (variazione['classe'] or '') + 
+                    (variazione['aula'] or '') + 
+                    (variazione['prof_assente'] or '') + 
+                    (variazione['sostituto_1'] or '') + 
+                    (variazione['sostituto_2'] or '') + 
+                    (variazione['pagamento'] or '') + 
+                    (variazione['note'] or '') + date
+                )
             )
             v.save()
     
