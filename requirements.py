@@ -31,7 +31,7 @@ from requests import get
 # Moduli interni 
 
 # Modelli DB
-from models.models import Utente, Chat
+from models.models import Utente, Chat, Pdf, Variazione
 
 # Utils
 from utils.jsonUtils import load_configs, toJSON, fromJSON

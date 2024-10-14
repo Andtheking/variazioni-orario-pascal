@@ -62,6 +62,8 @@ def main():
         callback = initialize,
         when = 1
     )
+    
+    
 
     
     application.run_polling() # Avvia il polling: https://blog.neurotech.africa/content/images/2023/06/telegram-polling-vs-webhook-5-.png 

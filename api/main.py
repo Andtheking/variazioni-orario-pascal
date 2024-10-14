@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from .get_pdf import allPdfsByDate
-from .read_pdf import PDFJson
+from .read_pdf import PDFJson, PDF_db
     
-def variazioni_by_date(date=None):
+from models.models import Pdf
+
+def variazioni_by_date(date=None) -> list[Pdf]:
     if date is None:
         date = (datetime.now() +
                   timedelta(days=1)).strftime("%d-%m")
@@ -14,16 +16,10 @@ def variazioni_by_date(date=None):
     
     x = []
     for p in paths:
-        x.append(PDFJson(p))
+        x.append(PDF_db(p))
 
     return x
 
-def search_class(json, classe):
-    output = []
-    for pdf in json:
-        # Uso append e non extend per separare i vari pdf diversi in elementi diversi della lista
-        output.append([record for record in pdf if record['classe'] == classe])
-    return output
 
 if __name__ == "__main__":
-    print(search_class(variazioni_by_date("14-10"),"2M"))
+    print(variazioni_by_date("15-10"),"1A")
