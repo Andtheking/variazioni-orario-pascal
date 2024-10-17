@@ -38,7 +38,8 @@ def main():
         "help": MessageHandler(message_handler_as_command('help'),middleware(help)),
         "addAdmin": MessageHandler(message_handler_as_command('addAdmin','(?P<candidate>.+)?'), middleware(addAdmin)),
         "removeAdmin": MessageHandler(message_handler_as_command('removeAdmin','(?P<candidate>.+)?'), middleware(removeAdmin)),
-        "variazioni":MessageHandler(message_handler_as_command('variazioni',".+", strict=False), middleware(variazioni)) # Controllo regex nella funzione interna
+        "variazioni":MessageHandler(message_handler_as_command('variazioni',".+", strict=False), middleware(variazioni)), # Controllo regex nella funzione interna
+        "impostaClasse":MessageHandler(message_handler_as_command("impostaClasse","(?P<classe>[1-5][A-z])"), middleware(impostaClasse))
     }
     
     for v in handlers.values():
@@ -66,7 +67,7 @@ def main():
     # 300 secondi = 5 minuti
     jq.run_repeating(
         callback=check_school_website,
-        interval=5,
+        interval=300,
         first=1
     )
     
