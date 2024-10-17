@@ -31,7 +31,7 @@ from requests import get
 # Moduli interni 
 
 # Modelli DB
-from models.models import Utente, Chat, Pdf, Variazione
+from models.models import Utente, Chat, Pdf, Variazione, VariazioniInviate
 
 # Utils
 from utils.jsonUtils import load_configs, toJSON, fromJSON
@@ -57,3 +57,4 @@ from commands.variazioni import variazioni
 # Jobs
 from jobs.send_logs import send_logs_channel
 from jobs.initialize import initialize
+from jobs.check_website import check_school_website

@@ -3,12 +3,13 @@ from .pdf_hash import get_pdf_hash
 
 from utils.log import log
 from utils.jsonUtils import toJSONFile, fromJSONFile, toJSON
+from utils.format_output import format_variazione
 
 from models.models import Variazione, Pdf
 
 import datetime
 def LeggiPDF(pdf_path):
-    REGEX = r"^(?P<ora>[1-6])\s*(?P<classe>(?:[1-5]([A-Z]|BIO))| POTENZIAMENTO)\((?P<aula>.+?)\)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
+    REGEX = r"^(?P<ora>[1-6])\s*(?P<classe>(?:[1-5](?:[A-Z]|BIO))| POTENZIAMENTO)(?:\((?P<aula>.+?)\)|\s*)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
     a = PyPDF2.PdfReader(pdf_path)
     
     api_output = []
@@ -20,11 +21,12 @@ def LeggiPDF(pdf_path):
         for line in lines:
             m = re.search(REGEX, line)
             if m:
-                api_output.append({key: value.strip() for key, value in m.groupdict().items()})
+                api_output.append({key: (value.strip() if value else None) for key, value in m.groupdict().items()})
                 i+=1
-        if len(lines) != i+2:
-            log("C'è un problema con i PDF.",tipo='warning', send_with_bot=True) 
+        if len(lines) != i+2: # i+2 rappresenta "Righe lette + 2", 2 che sarebbero l'intestazione"
+            log(f"C'è un problema con il PDF {pdf_path}",tipo='warning', send_with_bot=True) 
             log("<$EOL$>".join(lines),tipo='warning', send_with_bot=True, only_file=True) 
+            raise Exception(f"PDF: Errore con la lettura del pdf \"{pdf_path}\"")
             
     return api_output
 
@@ -44,8 +46,9 @@ def PDF_db(pdf_path, date):
     if not pdf:
         log('Nuovo pdf')
         json = LeggiPDF(pdf_path)
+            
         
-        pdf = Pdf(pdf_hash_key=hsh)
+        pdf = Pdf(pdf_hash_key=hsh, date=date)
         pdf.save()
         for variazione in json:
             v = Variazione(
@@ -57,18 +60,9 @@ def PDF_db(pdf_path, date):
                 sostituto_2 = variazione['sostituto_2'],
                 pagamento = variazione['pagamento'],
                 note = variazione['note'],
-                pdf = pdf,
-                hash_variazione = hash(
-                    (variazione['ora'] or '') + 
-                    (variazione['classe'] or '') + 
-                    (variazione['aula'] or '') + 
-                    (variazione['prof_assente'] or '') + 
-                    (variazione['sostituto_1'] or '') + 
-                    (variazione['sostituto_2'] or '') + 
-                    (variazione['pagamento'] or '') + 
-                    (variazione['note'] or '') + date
-                )
+                pdf = pdf
             )
+            v.hash_variazione = str(hash(format_variazione(v) + date + str(datetime.datetime.year)))
             v.save()
     
     return pdf

@@ -21,5 +21,10 @@ def variazioni_by_date(date=None) -> list[Pdf]:
     return x
 
 
+
 if __name__ == "__main__":
-    print(variazioni_by_date("15-10"),"1A")
+    # print(variazioni_by_date("15-10"),"1A")
+    
+    PDF_db('api/pdfs/pdfLong.pdf', '01-01')
+    PDF_db('api/pdfs/pdf.pdf', '02-01')
+    pass

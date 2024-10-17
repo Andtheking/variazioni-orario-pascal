@@ -24,6 +24,7 @@ class Utente(BaseModel):
 class Pdf(BaseModel):
     pdf_hash_key = TextField(null=False, unique=True)
     sent = BooleanField(default=False)
+    date = TextField(unique=False)
 
 class Variazione(BaseModel):
     ora = TextField(null=True, unique=False)
@@ -34,13 +35,25 @@ class Variazione(BaseModel):
     sostituto_2 = TextField(null=True, unique=False)
     pagamento = TextField(null=True, unique=False)
     note = TextField(null=True, unique=False)
+    
+    hash_variazione = TextField(unique=True)
+    
     pdf = ForeignKeyField(Pdf, backref='variazioni')  # Colonna per il pdf da cui è stata estrapolata la variazione
-    hash_variazione = TextField(unique=False)
+
+class VariazioniInviate(BaseModel):
+    variazione = TextField()
+    utente = ForeignKeyField(Utente)
+    
     
 class Chat(BaseModel):
     id = IntegerField(primary_key=True)
     title = TextField(null=True)
 
+def reset_variazioni():
+    db.drop_tables([Pdf, Variazione, VariazioniInviate])
+    db.create_tables([Pdf, Variazione, VariazioniInviate])
+
+
+
 if __name__ == '__main__':
-    db.drop_tables([Pdf, Variazione])
-    db.create_tables([Pdf, Variazione])
+    reset_variazioni()    

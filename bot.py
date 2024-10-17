@@ -63,6 +63,13 @@ def main():
         when = 1
     )
     
+    # 300 secondi = 5 minuti
+    jq.run_repeating(
+        callback=check_school_website,
+        interval=5,
+        first=1
+    )
+    
     
 
     
