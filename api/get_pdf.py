@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 
 URL = "https://www.ispascalcomandini.it/variazioni-orario-istituto-tecnico-tecnologico/"
-DOWNLOAD_FOLDER = 'api\\pdfs'
+DOWNLOAD_FOLDER = 'api/pdfs'
 
 def ottieniLinkPdfs(dataSelezionata: str) -> list[str]:
     dataSelezionata = formattaGiorno(dataSelezionata)
@@ -30,10 +30,10 @@ def ottieniLinkPdfs(dataSelezionata: str) -> list[str]:
 def scaricaPdf(link: str) -> str:
     response = requests.get(link)
 
-    with open(f'{DOWNLOAD_FOLDER}\\{link[link.rindex("/")+1:]}', 'wb') as f:
+    with open(f'{DOWNLOAD_FOLDER}/{link[link.rindex("/")+1:]}', 'wb') as f:
         f.write(response.content)
 
-    return f'{DOWNLOAD_FOLDER}\\{link[link.rindex("/")+1:]}'
+    return f'{DOWNLOAD_FOLDER}/{link[link.rindex("/")+1:]}'
 
 def allPdfsByDate(date):
     links = ottieniLinkPdfs(date)
