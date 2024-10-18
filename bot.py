@@ -30,9 +30,6 @@ def main():
     # Avvia il bot
     application = Application.builder().token(TOKEN).build() # Se si vuole usare la PicklePersistance bisogna aggiungere dopo .token(TOKEN) anche .persistance(OGGETTO_PP)
 
-    print(message_handler_as_command('variazioni',other=r'(?:\s*(?P<classe>[1-5][A-Z]))?(?:\s*(?P<data>\d{1,2}[-/]\d{1,2}))?', strict=False).pattern.pattern)
-    
-    
     handlers = {
         "start": MessageHandler(message_handler_as_command('start'),middleware(start)),
         "help": MessageHandler(message_handler_as_command('help'),middleware(help)),
@@ -59,10 +56,6 @@ def main():
             interval=60
         )
 
-    jq.run_once(
-        callback = initialize,
-        when = 1
-    )
     
     # 300 secondi = 5 minuti
     jq.run_repeating(
@@ -72,8 +65,12 @@ def main():
     )
     
     
-
     
+    
+    jq.run_once(
+        callback = initialize,
+        when = 1
+    )
     application.run_polling() # Avvia il polling: https://blog.neurotech.africa/content/images/2023/06/telegram-polling-vs-webhook-5-.png 
     
 # Stabilisce che il codice sarà avviato solo quando il file è aperto direttamente, e non da un altro programma

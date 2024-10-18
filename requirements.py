@@ -52,7 +52,7 @@ config = Config()
 from commands.doAlways import middleware
 from commands.admin import addAdmin, removeAdmin
 from commands.variazioni import variazioni
-
+from commands.impostaClasse import impostaClasse
 
 # Jobs
 from jobs.send_logs import send_logs_channel

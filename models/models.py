@@ -41,7 +41,8 @@ class Variazione(BaseModel):
     pdf = ForeignKeyField(Pdf, backref='variazioni')  # Colonna per il pdf da cui è stata estrapolata la variazione
 
 class VariazioniInviate(BaseModel):
-    variazione = TextField()
+    variazione = ForeignKeyField(Variazione)
+    hash_messaggio = TextField(unique=False)
     utente = ForeignKeyField(Utente)
     
     

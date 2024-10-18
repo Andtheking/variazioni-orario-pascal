@@ -62,7 +62,9 @@ def PDF_db(pdf_path, date):
                 note = variazione['note'],
                 pdf = pdf
             )
-            v.hash_variazione = str(hash(format_variazione(v) + date + str(datetime.datetime.year)))
+            print(format_variazione(v) + date + str(datetime.datetime.now().year))
+            v.hash_variazione = str(hash(format_variazione(v) + date + str(datetime.datetime.now().year)))
+            print(v.hash_variazione)
             v.save()
     
     return pdf

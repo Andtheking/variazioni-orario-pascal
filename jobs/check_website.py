@@ -10,11 +10,11 @@ from utils.format_output import format_variazione
 
 URL = fromJSONFile('secret/utils.json')['URL']
 lastcheck = [""]
-variazioni_inviate = []
 
 from telegram.error import Forbidden
 
 import time
+from datetime import datetime
 
 TEST = False
 
@@ -55,29 +55,29 @@ async def check_school_website(context: ContextTypes.DEFAULT_TYPE):
             continue
         
         variazioni_utente: list[Variazione] = Variazione.select().join(Pdf).where((Variazione.classe == utente.classe) & (Pdf.id << [k.id for k in l])).order_by(Pdf.date)
-        output_by_date: dict[str, str] = {}
+        output_by_date: dict[str, list[str,list[Variazione]]] = {}
+
         for v in variazioni_utente:
             date = v.pdf.date
-
-            if date not in output_by_date:
-                output_by_date[date] = f"Variazioni per la {v.classe} il {date}\n\n"
-
-            output_by_date[date] += format_variazione(v)
+            h = v.hash_variazione
             
-        
-        for date, message in output_by_date.items():
-            h = hash(message.strip())
             already_sent = (VariazioniInviate
-                  .select()
-                  .join(Variazione, on=(VariazioniInviate.variazione == h))
-                  .join(Utente, on=(VariazioniInviate.utente == Utente.id))
-                  .where(Utente.id == utente.id)
+                .select()
+                .join(Utente, on=(VariazioniInviate.utente == Utente.id))
+                .where((Utente.id == utente.id) &  (VariazioniInviate.hash_messaggio == v.hash_variazione))
             )
             
-            # Sarà "None" se non trova nulla, quindi non entrerà nell'if
-            if already_sent.get_or_none():
+            if already_sent:
                 continue
+
+            if date not in output_by_date:
+                output_by_date[date] = [f"Variazioni per la {v.classe} il {date}\n\n",[]]
+
+            output_by_date[date][0] += format_variazione(v)
+            output_by_date[date][1].append(v)
         
+        for date, message in output_by_date.items():
+            message, v = (message[0], message[1])
             try:
                 await context.bot.send_message(
                     chat_id=utente.id,
@@ -85,14 +85,15 @@ async def check_school_website(context: ContextTypes.DEFAULT_TYPE):
                     parse_mode=ParseMode.HTML
                 )
                 
-                for v in variazioni_utente:
-                    if v.pdf.date == date:
-                        VariazioniInviate.create(variazione=hash(message.strip()), utente=utente)
+                for a in v:
+                    VariazioniInviate.create(variazione=a, utente=utente, hash_messaggio=a.hash_variazione)
             except Exception as e:
                 error = f"Invio della notifica live a {utente.username} ({utente.id}) non riuscito."
                 
                 if e is Forbidden:
                     error += "Probabilmente ha bloccato il bot."
+                
+                error += '\n\n' + str(e)
                 
                 log(error, send_with_bot=(not (e is Forbidden)), tipo='errore')
             
