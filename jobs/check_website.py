@@ -35,7 +35,7 @@ async def check_school_website(context: ContextTypes.DEFAULT_TYPE):
         return
 
     log("Il sito è stato modificato", True, 'info')
-
+    lastcheck[0] = mod[0]
 
     start = time.time()
     if not TEST:
