@@ -7,7 +7,8 @@ from telegram.ext import (
     ContextTypes, # Per avere il tipo di context (ContextTypes.DEFAULT)
     CallbackQueryHandler, # Per gestire il click di un bottone o simile
     filters, # Per filtrare gli Handler 
-    PicklePersistence # Per un ConversationHandler, vedi https://gist.github.com/aahnik/6c9dd519c61e718e4da5f0645aa11ada#file-tg_conv_bot-py-L9
+    PicklePersistence, # Per un ConversationHandler, vedi https://gist.github.com/aahnik/6c9dd519c61e718e4da5f0645aa11ada#file-tg_conv_bot-py-L9
+    JobQueue
 )
 from telegram import (
     Update, # È il tipo che usiamo nei parametri dei metodi
@@ -22,6 +23,9 @@ from telegram.constants import (
     ParseMode, # Per assegnare il parametro "parse_mode=" nei messaggi che il bot invia
     ChatType
 )
+
+
+
 #endregion
 
 # Librerie esterne
@@ -48,13 +52,3 @@ class Config:
         
 config = Config()
 
-# Commands
-from commands.doAlways import middleware
-from commands.admin import addAdmin, removeAdmin
-from commands.variazioni import variazioni
-from commands.impostaClasse import impostaClasse
-
-# Jobs
-from jobs.send_logs import send_logs_channel
-from jobs.initialize import initialize
-from jobs.check_website import check_school_website

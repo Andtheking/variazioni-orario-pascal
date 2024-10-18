@@ -36,6 +36,6 @@ def middleware(next = None):
             log(f"La chat {old_title} ha cambiato titolo: {chat.effective_name} ({chat.id})", True)
         
         if next != None:
-            await next(update, context)
+            return await next(update, context)
             
     return doAlways
