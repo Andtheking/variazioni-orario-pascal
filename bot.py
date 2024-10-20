@@ -1,7 +1,5 @@
-import commands.rimuoviClasse
 from requirements import *
 from bot_requirements import * 
-
 
 TOKEN = load_configs()['token']  # TOKEN DEL BOT
 CANALE_LOG = load_configs()['canale_log'] # Se vuoi mandare i log del bot in un canale telegram, comodo a parere mio.
@@ -22,11 +20,17 @@ def cancel(action: str):
         return ConversationHandler.END
     return thing
 
+actual_commands = {}
 def message_handler_as_command(command, other=None, strict=True):
     prefix = rf"^[!.\/]{command}(?P<botSignature>@{config.BOT_USERNAME})?"
     other_pattern = rf"(?P<params>(?:\s*" + (other or '') + "))" if other else ''
     final_pattern = prefix+other_pattern + ('$' if strict else '')
-    print(final_pattern)
+    
+    if command not in actual_commands:
+        actual_commands[command] = [final_pattern]
+    else:
+        actual_commands[command].append(final_pattern)
+        
     return filters.Regex(re.compile(final_pattern,re.IGNORECASE))
 
 
@@ -98,10 +102,10 @@ def main():
         when = 1
     )
     
-    
-    
+    config.actual_commands = actual_commands
+
     application.run_polling() # Avvia il polling: https://blog.neurotech.africa/content/images/2023/06/telegram-polling-vs-webhook-5-.png 
-    
+
 # Stabilisce che il codice sarà avviato solo quando il file è aperto direttamente, e non come module
 # (Devi avviare il .py direttamente, rendendolo così il __main__)
 if __name__ == '__main__':

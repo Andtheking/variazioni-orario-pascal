@@ -1,6 +1,8 @@
 __pycache__
 secret/*
 log*
+!log.py
 pdfs/
 .vscode
 variazioni.json
+commands_images
