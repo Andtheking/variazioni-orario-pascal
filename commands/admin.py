@@ -30,7 +30,7 @@ async def addAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_user.admin = True
         db_user.save()
         await rispondi(message, f"Aggiunto correttamente {db_user.username} come admin.")
-        log(f"L'utente {db_user.username} è stato reso admin da {message.from_user.name}.")
+        log(f"L'utente {db_user.username} è stato reso admin da {message.from_user.name}.", True)
     else:
         await rispondi(message, f"L'utente {db_user.username} è già admin.")
    
@@ -44,6 +44,6 @@ async def removeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_user.admin = False
         db_user.save()
         await rispondi(message, f"Rimosso correttamente {db_user.username} da admin.")
-        log(f"L'utente {db_user.username} è stato rimosso dagli admin da {message.from_user.name}.")
+        log(f"L'utente {db_user.username} è stato rimosso dagli admin da {message.from_user.name}.", True)
     else:
         await rispondi(message, f"L'utente {db_user.username} non è admin.")

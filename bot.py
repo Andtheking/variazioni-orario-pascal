@@ -6,13 +6,14 @@ CANALE_LOG = load_configs()['canale_log'] # Se vuoi mandare i log del bot in un 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE): # /start
     await update.message.reply_text(f'Hai avviato il bot, congrats')
+    raise Exception("Prova")
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE): # /help
     await update.message.reply_text("aiuto")
 
 # Segnala quando il bot crasha, con motivo del crash
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    log(f'Update "{update}" caused error "{context.error}"',context.bot, "error")
+    log(f'Update "{update}" caused error "{context.error}"',True, "errore")
 
 def cancel(action: str): 
     async def thing(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,7 +66,7 @@ def setup_jobs(job_queue: JobQueue):
     if not load_configs()['test']:
         job_queue.run_repeating(
             callback=send_logs_channel,
-            interval=60
+            interval=60,
         )
 
     
