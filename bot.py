@@ -52,7 +52,7 @@ def get_handlers():
         "addAdmin": MessageHandler(message_handler_as_command('addAdmin','(?P<candidate>.+)?'), middleware(addAdmin)),
         "removeAdmin": MessageHandler(message_handler_as_command('removeAdmin','(?P<candidate>.+)?'), middleware(removeAdmin)),
         
-        "variazioni":MessageHandler(message_handler_as_command('variazioni',".+", strict=False), middleware(variazioni)), # Controllo regex nella funzione interna
+        "variazioni":MessageHandler(message_handler_as_command('variazioni',"(.+)?", strict=False), middleware(variazioni)), # Controllo regex nella funzione interna
         "classe": MessageHandler(message_handler_as_command('classe'), middleware(classe)),
         
         "impostaClasse": impostaClasseConversation(),
