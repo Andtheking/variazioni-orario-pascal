@@ -6,7 +6,6 @@ CANALE_LOG = load_configs()['canale_log'] # Se vuoi mandare i log del bot in un 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE): # /start
     await update.message.reply_text(f'Hai avviato il bot, congrats')
-    raise Exception("Prova")
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE): # /help
     await update.message.reply_text("aiuto")
