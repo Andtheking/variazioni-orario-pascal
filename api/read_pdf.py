@@ -39,6 +39,8 @@ def PDFJson(pdf_path):
         toJSONFile('variazioni.json',x)
     return x[hsh]
 
+import hashlib
+
 def PDF_db(pdf_path, date):
     hsh = get_pdf_hash(pdf_path)
     pdf = Pdf.get_or_none(Pdf.pdf_hash_key == hsh)
@@ -63,7 +65,7 @@ def PDF_db(pdf_path, date):
                 pdf = pdf
             )
             print(format_variazione(v) + date + str(datetime.datetime.now().year))
-            v.hash_variazione = str(hash(format_variazione(v) + date + str(datetime.datetime.now().year)))
+            v.hash_variazione = str(hashlib.sha1(format_variazione(v) + date + str(datetime.datetime.now().year)))
             print(v.hash_variazione)
             v.save()
     

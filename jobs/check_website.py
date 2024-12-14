@@ -104,6 +104,7 @@ def download_pdfs(soup: BeautifulSoup) -> list[Pdf]:
     pdfs = []
     for link in listaPdf:
         path = scaricaPdf(link)
+        x = None
         try:
             x = PDF_db(path, estrai_data(path))
         except Exception as e:
