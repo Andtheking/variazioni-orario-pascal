@@ -9,7 +9,7 @@ from models.models import Variazione, Pdf
 
 import datetime
 def LeggiPDF(pdf_path):
-    REGEX = r"^(?P<ora>[1-6])\s*(?P<classe>(?:[1-5](?:[A-Z]|BIO))| POTENZIAMENTO)(?:\((?P<aula>.+?)\)|\s*)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
+    REGEX = r"^(?P<ora>[1-6])\s*(?P<classe>(?:[1-5](?:[A-Z]|BIO))| POTENZIAMENTO| SPORTELLO)(?:\((?P<aula>.+?)\)|\s*)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
     a = PyPDF2.PdfReader(pdf_path)
     
     api_output = []
@@ -52,21 +52,25 @@ def PDF_db(pdf_path, date):
         
         pdf = Pdf(pdf_hash_key=hsh, date=date)
         pdf.save()
-        for variazione in json:
-            v = Variazione(
-                ora = variazione['ora'],
-                classe = variazione['classe'],
-                aula = variazione['aula'],
-                prof_assente = variazione['prof_assente'],
-                sostituto_1 = variazione['sostituto_1'],
-                sostituto_2 = variazione['sostituto_2'],
-                pagamento = variazione['pagamento'],
-                note = variazione['note'],
-                pdf = pdf
-            )
-            print(format_variazione(v) + date + str(datetime.datetime.now().year))
-            v.hash_variazione = str(hashlib.sha1(format_variazione(v) + date + str(datetime.datetime.now().year)))
-            print(v.hash_variazione)
-            v.save()
+        try:
+            for variazione in json:
+                v = Variazione(
+                    ora = variazione['ora'],
+                    classe = variazione['classe'],
+                    aula = variazione['aula'],
+                    prof_assente = variazione['prof_assente'],
+                    sostituto_1 = variazione['sostituto_1'],
+                    sostituto_2 = variazione['sostituto_2'],
+                    pagamento = variazione['pagamento'],
+                    note = variazione['note'],
+                    pdf = pdf
+                )
+                print(format_variazione(v) + date + str(datetime.datetime.now().year))
+                v.hash_variazione = str(hashlib.sha1((format_variazione(v) + date + str(datetime.datetime.now().year)).encode("utf-8")).hexdigest())
+                print(v.hash_variazione)
+                v.save()
+        except Exception as e:
+            pdf.delete()
+            raise Exception(f"Salvataggio nel DB delle variazione non riuscito: {e}")
     
     return pdf
