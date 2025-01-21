@@ -10,25 +10,20 @@ from models.models import Variazione, Pdf
 import datetime
 def LeggiPDF(pdf_path):
     REGEX = r"^(?P<ora>[1-6])\s*(?P<classe>(?:[1-5](?:[A-Z]|BIO))| POTENZIAMENTO| SPORTELLO)(?:\((?P<aula>.+?)\)|\s*)(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
+    REGEX2 = r"^(?P<ora>[1-6])\s*(?P<classe>(?:[1-5](?:[A-Z]|BIO))| POTENZIAMENTO| SPORTELLO)\s*(?:(?P<aula>[^ ]+)|\s*)\s*(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>.+)?"
+    REGEX3 = r"(?P<ora>[1-6])\s*(?P<classe>(?:[1-5](?:[A-Z]|BIO))| POTENZIAMENTO| SPORTELLO)\s*(?:(?P<aula>[^ ]+)|\s*)\s*(?P<prof_assente>.+?\s.+?\s)(?P<sostituto_1>(?:- |.+?\s.+?\s))(?P<sostituto_2>(?:- |.+?\s.+?\s))(?P<pagamento>.+?(?:\s|$))(?P<note>[^_]+)"
+    
     a = PyPDF2.PdfReader(pdf_path)
     
     api_output = []
+    dicts = []
     for p in a.pages:
-        t = p.extract_text('\n')
-        lines = t.replace('\n(','(').split('\n')
-        # print("\n".join(lines))
-        i = 0
-        for line in lines:
-            m = re.search(REGEX, line)
-            if m:
-                api_output.append({key: (value.strip() if value else None) for key, value in m.groupdict().items()})
-                i+=1
-        if len(lines) != i+2: # i+2 rappresenta "Righe lette + 2", 2 che sarebbero l'intestazione"
-            log(f"C'è un problema con il PDF {pdf_path}",tipo='warning', send_with_bot=True) 
-            log("<$EOL$>".join(lines),tipo='warning', send_with_bot=True, only_file=True) 
-            raise Exception(f"PDF: Errore con la lettura del pdf \"{pdf_path}\"")
+        t = p.extract_text()
+        matches = re.finditer(REGEX3, t)
+        dicts.extend([m.groupdict() for m in matches])
+        pass
             
-    return api_output
+    return dicts
 
 def PDFJson(pdf_path):
     x = fromJSONFile('variazioni.json', r'{}')
@@ -65,7 +60,6 @@ def PDF_db(pdf_path, date):
                     note = variazione['note'],
                     pdf = pdf
                 )
-                print(format_variazione(v) + date + str(datetime.datetime.now().year))
                 v.hash_variazione = str(hashlib.sha1((format_variazione(v) + date + str(datetime.datetime.now().year)).encode("utf-8")).hexdigest())
                 print(v.hash_variazione)
                 v.save()

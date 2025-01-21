@@ -104,6 +104,7 @@ def main():
     
     config.actual_commands = actual_commands
 
+
     application.run_polling() # Avvia il polling: https://blog.neurotech.africa/content/images/2023/06/telegram-polling-vs-webhook-5-.png 
 
 # Stabilisce che il codice sarà avviato solo quando il file è aperto direttamente, e non come module

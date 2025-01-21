@@ -35,7 +35,7 @@ def get_regex_image(regexes: dict[str, list[str]]):
             driver.get(regex_url)
 
             # Aspetta che la pagina carichi l'immagine (regola il tempo se necessario)
-            print("Waiting 2 seconds...")
+            print("Waiting...")
             time.sleep(.5)
 
             # Trova l'elemento immagine generato
@@ -47,7 +47,7 @@ def get_regex_image(regexes: dict[str, list[str]]):
                 f.write(svg_code)
 
             command = [f'{inkscape_path}', '--export-type=png', f'--export-filename={path}{command}_{i}.png', f'{path}file.svg']
-            subprocess.Popen(command)
+            subprocess.Popen(command).wait()
 
     # Chiudi il driver
     driver.quit()
