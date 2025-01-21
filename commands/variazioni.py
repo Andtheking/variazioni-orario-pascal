@@ -46,7 +46,8 @@ async def variazioni(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if result:
                 variazioni_classe.append(result)
         elif prof:
-            result = list(Variazione.select().join(Pdf).where(((Variazione.sostituto_1 == prof) | (Variazione.sostituto_2 == prof)) & (Pdf.id == pdf.id)))
+            wildcard = f"%{prof}%"
+            result = list(Variazione.select().join(Pdf).where(((Variazione.sostituto_1 ** wildcard) | (Variazione.sostituto_2 ** wildcard)) & (Pdf.id == pdf.id)))
             if result:
                 variazioni_classe.append(result)
         
